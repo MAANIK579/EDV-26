@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusIQ — AI-Powered Smart Campus Assistant</title>
+    <meta name="description"
+        content="CampusIQ is the centralized operating system for university life — schedules, maps, events, academics, and an AI assistant in one place." />
+    <meta property="og:title" content="CampusIQ — Smart Campus Assistant" />
+    <meta property="og:description" content="Your entire campus life, unified." />
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- ======== SIDEBAR ======== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="fas fa-graduation-cap"></i></div>
+            <span class="logo-text">Campus<span class="accent">IQ</span></span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#dashboard" class="nav-link active" data-view="dashboard" id="nav-dashboard">
+                <i class="fas fa-th-large"></i><span>Dashboard</span>
+            </a>
+            <a href="#schedule" class="nav-link" data-view="schedule" id="nav-schedule">
+                <i class="fas fa-calendar-alt"></i><span>Schedule</span>
+            </a>
+            <a href="#map" class="nav-link" data-view="map" id="nav-map">
+                <i class="fas fa-map-marked-alt"></i><span>Campus Map</span>
+            </a>
+            <a href="#events" class="nav-link" data-view="events" id="nav-events">
+                <i class="fas fa-calendar-day"></i><span>Events</span>
+            </a>
+            <a href="#academics" class="nav-link" data-view="academics" id="nav-academics">
+                <i class="fas fa-book-open"></i><span>Academics</span>
+            </a>
+            <a href="#services" class="nav-link" data-view="services" id="nav-services">
+                <i class="fas fa-concierge-bell"></i><span>Services</span>
+            </a>
+            <a href="#chat" class="nav-link" data-view="chat" id="nav-chat">
+                <i class="fas fa-robot"></i><span>AI Chat</span>
+            </a>
+            <a href="#profile" class="nav-link" data-view="profile" id="nav-profile">
+                <i class="fas fa-user-circle"></i><span>Profile</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-pill">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul" alt="avatar" class="user-avatar" />
+                <div class="user-info">
+                    <span class="user-name">Rahul Sharma</span>
+                    <span class="user-role">B.Tech CSE · Sem 6</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ======== MAIN CONTENT ======== -->
+    <main class="main" id="main">
+
+        <!-- ——— Top Bar ——— -->
+        <header class="topbar">
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="search-box" id="searchContainer">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search courses, events, buildings…" id="globalSearch"
+                    autocomplete="off" />
+                <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
+            <div class="live-clock" id="liveClock"></div>
+            <div class="topbar-actions">
+                <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <section class="view active" id="view-dashboard">
+            <div class="view-header">
+                <div>
+                    <h1>Good Afternoon, <span class="accent">Rahul</span> 👋</h1>
+                    <p class="subtitle">Here's your campus snapshot for today — <span id="todayDate"></span></p>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card" style="--accent: var(--cyan)">
+                    <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="stat-body">
+                        <span class="stat-value" data-target="87">0</span><span class="stat-unit">%</span>
+                        <span class="stat-label">Attendance</span>
+                    </div>
+                    <div class="stat-spark"></div>
+                </div>
+                <div class="stat-card" style="--accent: var(--purple)">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-body">
+                        <span class="stat-value" data-target="8.9" data-decimals="1">0</span>
+                        <span class="stat-label">CGPA</span>
+                    </div>
+                    <div class="stat-spark"></div>
+                </div>
+                <div class="stat-card" style="--accent: var(--pink)">
+                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-body">
+                        <span class="stat-value" data-target="5">0</span>
+                        <span class="stat-label">Events This Week</span>
+                    </div>
+                    <div class="stat-spark"></div>
+                </div>
+                <div class="stat-card" style="--accent: var(--amber)">
+                    <div class="stat-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="stat-body">
+                        <span class="stat-value" data-target="12">0</span>
+                        <span class="stat-label">Unread Messages</span>
+                    </div>
+                    <div class="stat-spark"></div>
+                </div>
+            </div>
+
+            <!-- Two-column layout: Timeline + Announcements -->
+            <div class="dashboard-grid">
+                <!-- Today's Timeline -->
+                <div class="glass-card">
+                    <h2 class="card-title"><i class="fas fa-stream"></i> Today's Timeline</h2>
+                    <div class="timeline">
+                        <div class="timeline-item past">
+                            <span class="tl-time">09:00</span>
+                            <div class="tl-dot"></div>
+                            <div class="tl-content">
+                                <strong>Data Structures</strong>
+                                <span>Room 301 · Prof. Mehra</span>
+                            </div>
+                        </div>
+                        <div class="timeline-item active">
+                            <span class="tl-time">11:00</span>
+                            <div class="tl-dot pulse"></div>
+                            <div class="tl-content">
+                                <strong>Machine Learning</strong>
+                                <span>Lab 204 · Dr. Kapoor</span>
+                                <span class="live-badge">NOW</span>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="tl-time">14:00</span>
+                            <div class="tl-dot"></div>
+                            <div class="tl-content">
+                                <strong>Operating Systems</strong>
+                                <span>Room 105 · Prof. Singh</span>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="tl-time">16:00</span>
+                            <div class="tl-dot"></div>
+                            <div class="tl-content">
+                                <strong>Web Dev Workshop</strong>
+                                <span>Auditorium · Guest Speaker</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Announcements -->
+                <div class="glass-card">
+                    <h2 class="card-title"><i class="fas fa-bullhorn"></i> Announcements</h2>
+                    <div class="announcements">
+                        <div class="announce-item urgent">
+                            <div class="announce-dot"></div>
+                            <div>
+                                <strong>Mid-Semester Exams</strong>
+                                <p>Schedule released — starts March 10. Check the Academics tab for your timetable.</p>
+                                <span class="announce-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="announce-item">
+                            <div class="announce-dot"></div>
+                            <div>
+                                <strong>Hackathon Registrations Open</strong>
+                                <p>36-hour campus hackathon on March 15-16. Register before March 5.</p>
+                                <span class="announce-time">5 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="announce-item">
+                            <div class="announce-dot"></div>
+                            <div>
+                                <strong>Library Hours Extended</strong>
+                                <p>Library will remain open until 11 PM during exam season.</p>
+                                <span class="announce-time">1 day ago</span>
+                            </div>
+                        </div>
+                        <div class="announce-item">
+                            <div class="announce-dot"></div>
+                            <div>
+                                <strong>Sports Day — Volunteers Needed</strong>
+                                <p>Annual sports day on Feb 28. Sign up to volunteer at the Sports Complex.</p>
+                                <span class="announce-time">2 days ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick-Access Cards Row -->
+            <div class="quick-access">
+                <div class="quick-card" data-navigate="schedule">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>My Schedule</span>
+                </div>
+                <div class="quick-card" data-navigate="map">
+                    <i class="fas fa-directions"></i>
+                    <span>Navigate Campus</span>
+                </div>
+                <div class="quick-card" data-navigate="academics">
+                    <i class="fas fa-tasks"></i>
+                    <span>Assignments</span>
+                </div>
+                <div class="quick-card" data-navigate="services">
+                    <i class="fas fa-utensils"></i>
+                    <span>Cafeteria Menu</span>
+                </div>
+                <div class="quick-card" data-navigate="events">
+                    <i class="fas fa-trophy"></i>
+                    <span>Upcoming Events</span>
+                </div>
+                <div class="quick-card" data-navigate="chat">
+                    <i class="fas fa-robot"></i>
+                    <span>Ask AI</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SCHEDULE ==================== -->
+        <section class="view" id="view-schedule">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-calendar-alt"></i> Weekly Schedule</h1>
+                    <p class="subtitle">Your timetable at a glance</p>
+                </div>
+                <div class="view-actions">
+                    <button class="btn btn-outline" id="prevWeek"><i class="fas fa-chevron-left"></i> Prev</button>
+                    <span class="week-label" id="weekLabel">This Week</span>
+                    <button class="btn btn-outline" id="nextWeek">Next <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="schedule-table-wrap glass-card">
+                <table class="schedule-table" id="scheduleTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                            <th>Thursday</th>
+                            <th>Friday</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleBody">
+                        <!-- filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== CAMPUS MAP ==================== -->
+        <section class="view" id="view-map">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-map-marked-alt"></i> Campus Map</h1>
+                    <p class="subtitle">Find buildings, navigate, and explore</p>
+                </div>
+                <div class="view-actions">
+                    <div class="search-box compact">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search buildings…" id="mapSearch" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-container glass-card">
+                <div class="campus-map" id="campusMap">
+                    <!-- Interactive Campus Map SVG -->
+                    <svg viewBox="0 0 900 600" class="campus-svg" id="campusSVG">
+                        <!-- Background -->
+                        <defs>
+                            <linearGradient id="grassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#1a3a2a;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#0f2a1e;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="buildingGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3" />
+                                <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0.3" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <!-- Ground -->
+                        <rect width="900" height="600" fill="url(#grassGrad)" rx="16" />
+                        <!-- Paths/Roads -->
+                        <path d="M 0 300 Q 200 280 450 300 Q 700 320 900 300" stroke="rgba(255,255,255,0.08)"
+                            fill="none" stroke-width="40" />
+                        <path d="M 450 0 Q 430 200 450 300 Q 470 400 450 600" stroke="rgba(255,255,255,0.08)"
+                            fill="none" stroke-width="40" />
+
+                        <!-- Buildings -->
+                        <g class="map-building" data-building="main-block" data-name="Main Academic Block">
+                            <rect x="60" y="80" width="160" height="100" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--cyan)" stroke-width="1.5" />
+                            <text x="140" y="125" text-anchor="middle" fill="var(--cyan)" font-size="11"
+                                font-weight="600">Main Academic</text>
+                            <text x="140" y="145" text-anchor="middle" fill="rgba(255,255,255,0.5)"
+                                font-size="9">Block</text>
+                        </g>
+                        <g class="map-building" data-building="library" data-name="Central Library">
+                            <rect x="300" y="60" width="140" height="90" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--purple)" stroke-width="1.5" />
+                            <text x="370" y="100" text-anchor="middle" fill="var(--purple)" font-size="11"
+                                font-weight="600">Central</text>
+                            <text x="370" y="118" text-anchor="middle" fill="rgba(255,255,255,0.5)"
+                                font-size="9">Library</text>
+                        </g>
+                        <g class="map-building" data-building="cs-block" data-name="CS & IT Block">
+                            <rect x="540" y="80" width="150" height="100" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--pink)" stroke-width="1.5" />
+                            <text x="615" y="125" text-anchor="middle" fill="var(--pink)" font-size="11"
+                                font-weight="600">CS & IT</text>
+                            <text x="615" y="145" text-anchor="middle" fill="rgba(255,255,255,0.5)"
+                                font-size="9">Block</text>
+                        </g>
+                        <g class="map-building" data-building="admin" data-name="Admin Building">
+                            <rect x="740" y="100" width="120" height="80" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--amber)" stroke-width="1.5" />
+                            <text x="800" y="140" text-anchor="middle" fill="var(--amber)" font-size="11"
+                                font-weight="600">Admin</text>
+                        </g>
+                        <g class="map-building" data-building="labs" data-name="Science Labs">
+                            <rect x="80" y="260" width="140" height="90" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--green)" stroke-width="1.5" />
+                            <text x="150" y="300" text-anchor="middle" fill="var(--green)" font-size="11"
+                                font-weight="600">Science Labs</text>
+                        </g>
+                        <g class="map-building" data-building="cafeteria" data-name="Food Court & Cafeteria">
+                            <rect x="300" y="340" width="140" height="80" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--orange)" stroke-width="1.5" />
+                            <text x="370" y="375" text-anchor="middle" fill="var(--orange)" font-size="11"
+                                font-weight="600">Food Court</text>
+                        </g>
+                        <g class="map-building" data-building="sports" data-name="Sports Complex">
+                            <rect x="540" y="320" width="160" height="110" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--cyan)" stroke-width="1.5" />
+                            <text x="620" y="370" text-anchor="middle" fill="var(--cyan)" font-size="11"
+                                font-weight="600">Sports</text>
+                            <text x="620" y="390" text-anchor="middle" fill="rgba(255,255,255,0.5)"
+                                font-size="9">Complex</text>
+                        </g>
+                        <g class="map-building" data-building="auditorium" data-name="Auditorium">
+                            <rect x="120" y="440" width="150" height="90" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--purple)" stroke-width="1.5" />
+                            <text x="195" y="485" text-anchor="middle" fill="var(--purple)" font-size="11"
+                                font-weight="600">Auditorium</text>
+                        </g>
+                        <g class="map-building" data-building="hostel" data-name="Hostel Block A & B">
+                            <rect x="370" y="470" width="170" height="90" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--pink)" stroke-width="1.5" />
+                            <text x="455" y="510" text-anchor="middle" fill="var(--pink)" font-size="11"
+                                font-weight="600">Hostel A & B</text>
+                        </g>
+                        <g class="map-building" data-building="health" data-name="Health Center">
+                            <rect x="700" y="440" width="130" height="80" rx="12" fill="url(#buildingGrad1)"
+                                stroke="var(--green)" stroke-width="1.5" />
+                            <text x="765" y="480" text-anchor="middle" fill="var(--green)" font-size="11"
+                                font-weight="600">Health Center</text>
+                        </g>
+
+                        <!-- You-are-here marker -->
+                        <g class="you-marker" transform="translate(370,300)">
+                            <circle r="8" fill="var(--cyan)" filter="url(#glow)" class="pulse-ring" />
+                            <circle r="5" fill="var(--cyan)" />
+                            <circle r="2" fill="white" />
+                        </g>
+                    </svg>
+                </div>
+                <!-- Building Info Panel -->
+                <div class="map-info" id="mapInfo">
+                    <div class="map-info-placeholder">
+                        <i class="fas fa-hand-pointer"></i>
+                        <p>Click on a building to see details</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== EVENTS ==================== -->
+        <section class="view" id="view-events">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-calendar-day"></i> Campus Events</h1>
+                    <p class="subtitle">Discover, RSVP, and participate</p>
+                </div>
+            </div>
+
+            <div class="event-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="academic">🎓 Academic</button>
+                <button class="filter-btn" data-filter="cultural">🎭 Cultural</button>
+                <button class="filter-btn" data-filter="sports">🏆 Sports</button>
+                <button class="filter-btn" data-filter="workshop">💻 Workshops</button>
+            </div>
+
+            <div class="events-grid" id="eventsGrid">
+                <!-- Event Card 1 -->
+                <div class="event-card" data-category="workshop">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #00d4ff, #7c3aed)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Mar 15-16</span>
+                        <span class="event-tag">Workshop</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>Campus Hackathon 2026</h3>
+                        <p>36-hour coding challenge. Build innovative solutions for real-world problems. ₹50K prize
+                            pool!</p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Auditorium</span>
+                            <span><i class="fas fa-users"></i> 120 registered</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+
+                <!-- Event Card 2 -->
+                <div class="event-card" data-category="cultural">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #f472b6, #a855f7)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Mar 8</span>
+                        <span class="event-tag">Cultural</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>Annual Cultural Fest — SPANDAN</h3>
+                        <p>Music, dance, drama, and art — three days of creativity. Open for all departments.</p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Main Ground</span>
+                            <span><i class="fas fa-users"></i> 450 interested</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+
+                <!-- Event Card 3 -->
+                <div class="event-card" data-category="academic">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #34d399, #06b6d4)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Mar 3</span>
+                        <span class="event-tag">Academic</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>AI/ML Guest Lecture Series</h3>
+                        <p>Guest speaker from Google Research on "Transformers in Production". Open to all CSE students.
+                        </p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Room 301</span>
+                            <span><i class="fas fa-users"></i> 80 registered</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+
+                <!-- Event Card 4 -->
+                <div class="event-card" data-category="sports">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #fbbf24, #f97316)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Feb 28</span>
+                        <span class="event-tag">Sports</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>Annual Sports Day</h3>
+                        <p>Track & field, basketball, cricket finals, and more. Cheer for your department!</p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Sports Complex</span>
+                            <span><i class="fas fa-users"></i> 300 participants</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+
+                <!-- Event Card 5 -->
+                <div class="event-card" data-category="workshop">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #818cf8, #c084fc)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Mar 5</span>
+                        <span class="event-tag">Workshop</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>Cloud Computing Workshop</h3>
+                        <p>Hands-on AWS workshop — deploy your first app on EC2. Certificates provided.</p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Lab 204</span>
+                            <span><i class="fas fa-users"></i> 60 registered</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+
+                <!-- Event Card 6 -->
+                <div class="event-card" data-category="cultural">
+                    <div class="event-banner" style="--gradient: linear-gradient(135deg, #f43f5e, #ec4899)">
+                        <span class="event-date"><i class="fas fa-calendar"></i> Mar 20</span>
+                        <span class="event-tag">Cultural</span>
+                    </div>
+                    <div class="event-body">
+                        <h3>Open Mic Night</h3>
+                        <p>Poetry, stand-up comedy, and storytelling. Everyone welcome, sign up at the Cultural Club.
+                        </p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> Amphitheatre</span>
+                            <span><i class="fas fa-users"></i> 90 interested</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">RSVP Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ACADEMICS ==================== -->
+        <section class="view" id="view-academics">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-book-open"></i> Academics</h1>
+                    <p class="subtitle">Courses, grades, and assignments</p>
+                </div>
+            </div>
+
+            <!-- Course Cards -->
+            <div class="academics-grid">
+                <div class="course-card" style="--accent: var(--cyan)">
+                    <div class="course-header">
+                        <span class="course-code">CS301</span>
+                        <span class="course-credits">4 Credits</span>
+                    </div>
+                    <h3>Data Structures & Algorithms</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Prof. Anil Mehra</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:88%">
+                            <span>A — 88%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Assignment 3: Trees</span>
+                            <span class="due soon">Due in 2 days</span>
+                        </div>
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Lab 5: Graph Traversal</span>
+                            <span class="due">Due Mar 8</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card" style="--accent: var(--purple)">
+                    <div class="course-header">
+                        <span class="course-code">CS405</span>
+                        <span class="course-credits">4 Credits</span>
+                    </div>
+                    <h3>Machine Learning</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Dr. Priya Kapoor</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:92%">
+                            <span>A+ — 92%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Project: Neural Networks</span>
+                            <span class="due soon">Due in 5 days</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card" style="--accent: var(--pink)">
+                    <div class="course-header">
+                        <span class="course-code">CS310</span>
+                        <span class="course-credits">3 Credits</span>
+                    </div>
+                    <h3>Operating Systems</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Prof. Rajiv Singh</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:79%">
+                            <span>B+ — 79%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Lab 6: Process Scheduling</span>
+                            <span class="due">Due Mar 10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card" style="--accent: var(--amber)">
+                    <div class="course-header">
+                        <span class="course-code">CS420</span>
+                        <span class="course-credits">3 Credits</span>
+                    </div>
+                    <h3>Computer Networks</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Dr. Suman Das</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:85%">
+                            <span>A — 85%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Assignment 4: TCP/IP</span>
+                            <span class="due">Due Mar 12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card" style="--accent: var(--green)">
+                    <div class="course-header">
+                        <span class="course-code">MA201</span>
+                        <span class="course-credits">3 Credits</span>
+                    </div>
+                    <h3>Probability & Statistics</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Prof. Ananya Roy</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:91%">
+                            <span>A+ — 91%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Problem Set 5</span>
+                            <span class="due">Due Mar 6</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card" style="--accent: var(--orange)">
+                    <div class="course-header">
+                        <span class="course-code">HS102</span>
+                        <span class="course-credits">2 Credits</span>
+                    </div>
+                    <h3>Professional Ethics</h3>
+                    <p class="course-prof"><i class="fas fa-chalkboard-teacher"></i> Dr. Kavita Jain</p>
+                    <div class="grade-bar">
+                        <div class="grade-fill" style="width:95%">
+                            <span>A+ — 95%</span>
+                        </div>
+                    </div>
+                    <div class="course-assignments">
+                        <div class="assign-item">
+                            <span><i class="fas fa-file-alt"></i> Essay: AI Ethics</span>
+                            <span class="due">Due Mar 14</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Semester Progress -->
+            <div class="glass-card semester-progress">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Semester Progress</h2>
+                <div class="progress-bars">
+                    <div class="progress-row">
+                        <span>Syllabus Completed</span>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:65%"><span>65%</span></div>
+                        </div>
+                    </div>
+                    <div class="progress-row">
+                        <span>Assignments Submitted</span>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:78%"><span>78%</span></div>
+                        </div>
+                    </div>
+                    <div class="progress-row">
+                        <span>Attendance</span>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:87%"><span>87%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SERVICES ==================== -->
+        <section class="view" id="view-services">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-concierge-bell"></i> Campus Services</h1>
+                    <p class="subtitle">Quick access to everything you need</p>
+                </div>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-tile" style="--accent: var(--cyan)">
+                    <div class="service-icon"><i class="fas fa-book"></i></div>
+                    <h3>Library</h3>
+                    <p>Search catalog, reserve books, check due dates</p>
+                    <div class="service-status open">Open until 11 PM</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--orange)">
+                    <div class="service-icon"><i class="fas fa-utensils"></i></div>
+                    <h3>Cafeteria</h3>
+                    <p>Today's menu, meal plans, order ahead</p>
+                    <div class="service-status open">Serving Lunch</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--purple)">
+                    <div class="service-icon"><i class="fas fa-bus"></i></div>
+                    <h3>Bus Tracker</h3>
+                    <p>Real-time bus locations, schedules, routes</p>
+                    <div class="service-status">Next: 2:30 PM → City Center</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--pink)">
+                    <div class="service-icon"><i class="fas fa-box-open"></i></div>
+                    <h3>Lost & Found</h3>
+                    <p>Report or search for lost items on campus</p>
+                    <div class="service-status">3 new items reported today</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--green)">
+                    <div class="service-icon"><i class="fas fa-heartbeat"></i></div>
+                    <h3>Health Center</h3>
+                    <p>Book appointments, health records, emergency</p>
+                    <div class="service-status open">Open · Dr. Mehta available</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--amber)">
+                    <div class="service-icon"><i class="fas fa-print"></i></div>
+                    <h3>Print & Copy</h3>
+                    <p>Upload docs, select printer, pay online</p>
+                    <div class="service-status">2 printers available</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--cyan)">
+                    <div class="service-icon"><i class="fas fa-dumbbell"></i></div>
+                    <h3>Sports & Gym</h3>
+                    <p>Book courts, gym slots, equipment rental</p>
+                    <div class="service-status open">Gym Open · 8 slots left</div>
+                </div>
+                <div class="service-tile" style="--accent: var(--purple)">
+                    <div class="service-icon"><i class="fas fa-id-card"></i></div>
+                    <h3>ID & Documents</h3>
+                    <p>Request transcripts, bonafide, ID replacement</p>
+                    <div class="service-status">Processing: 2-3 days</div>
+                </div>
+            </div>
+
+            <!-- Cafeteria Menu Preview -->
+            <div class="glass-card">
+                <h2 class="card-title"><i class="fas fa-utensils"></i> Today's Cafeteria Menu</h2>
+                <div class="menu-grid">
+                    <div class="menu-item">
+                        <span class="meal-type">🌅 Breakfast</span>
+                        <p>Aloo Paratha, Curd, Tea/Coffee, Fruit Bowl</p>
+                    </div>
+                    <div class="menu-item">
+                        <span class="meal-type">☀️ Lunch</span>
+                        <p>Rajma Chawal, Roti, Mixed Salad, Buttermilk</p>
+                    </div>
+                    <div class="menu-item">
+                        <span class="meal-type">🌙 Dinner</span>
+                        <p>Paneer Butter Masala, Naan, Rice, Gulab Jamun</p>
+                    </div>
+                    <div class="menu-item">
+                        <span class="meal-type">🍿 Snacks</span>
+                        <p>Samosa, Vada Pav, Cold Coffee, Cookies</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== AI CHAT ==================== -->
+        <section class="view" id="view-chat">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-robot"></i> CampusIQ AI Assistant</h1>
+                    <p class="subtitle">Ask me anything about campus life</p>
+                </div>
+            </div>
+
+            <div class="chat-fullscreen glass-card">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-msg bot">
+                        <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="chat-bubble">
+                            <p>Hey Rahul! 👋 I'm your CampusIQ assistant. I can help you with:</p>
+                            <ul>
+                                <li>📅 Schedule & class info</li>
+                                <li>🗺️ Campus navigation</li>
+                                <li>📚 Academic queries</li>
+                                <li>🎉 Events & activities</li>
+                                <li>🍽️ Cafeteria menus</li>
+                                <li>📋 Administrative tasks</li>
+                            </ul>
+                            <p>What would you like to know?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-suggestions" id="chatSuggestions">
+                    <button class="suggestion-chip" data-q="What's my next class?">📅 What's my next class?</button>
+                    <button class="suggestion-chip" data-q="Show today's cafeteria menu">🍽️ Cafeteria menu</button>
+                    <button class="suggestion-chip" data-q="Where is the library?">🗺️ Where is the library?</button>
+                    <button class="suggestion-chip" data-q="Any upcoming events?">🎉 Upcoming events</button>
+                    <button class="suggestion-chip" data-q="What's my attendance?">📊 My attendance</button>
+                </div>
+                <form class="chat-input-bar" id="chatForm">
+                    <input type="text" placeholder="Ask CampusIQ anything…" id="chatInput" autocomplete="off" />
+                    <button type="submit" class="btn btn-primary" id="chatSend"><i
+                            class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ==================== PROFILE ==================== -->
+        <section class="view" id="view-profile">
+            <div class="view-header">
+                <div>
+                    <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+                    <p class="subtitle">Manage your account and preferences</p>
+                </div>
+            </div>
+
+            <div class="profile-layout">
+                <!-- Profile Card -->
+                <div class="profile-card glass-card">
+                    <div class="profile-banner"></div>
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul" alt="Rahul Sharma"
+                        class="profile-pic" />
+                    <h2>Rahul Sharma</h2>
+                    <p class="profile-dept">B.Tech Computer Science & Engineering</p>
+                    <p class="profile-id">Roll No: 2023CSE1042 · Semester 6</p>
+                    <div class="profile-stats">
+                        <div><strong>8.9</strong><span>CGPA</span></div>
+                        <div><strong>87%</strong><span>Attendance</span></div>
+                        <div><strong>19</strong><span>Credits</span></div>
+                    </div>
+                    <div class="profile-contact">
+                        <p><i class="fas fa-envelope"></i> rahul.sharma@campus.edu</p>
+                        <p><i class="fas fa-phone"></i> +91 98765 43210</p>
+                        <p><i class="fas fa-map-marker-alt"></i> Hostel Block A, Room 214</p>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="glass-card settings-card">
+                    <h2 class="card-title"><i class="fas fa-cog"></i> Settings</h2>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <strong>Dark Mode</strong>
+                            <span>Use dark theme across the app</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <strong>Push Notifications</strong>
+                            <span>Get notified about classes & events</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="notifToggle" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <strong>Email Digests</strong>
+                            <span>Weekly summary of campus activities</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="emailToggle" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <strong>Language</strong>
+                            <span>Display language for the interface</span>
+                        </div>
+                        <select class="setting-select" id="langSelect">
+                            <option value="en">English</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ta">Tamil</option>
+                            <option value="te">Telugu</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ======== FLOATING CHAT WIDGET ======== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-fab" id="chatFab" aria-label="Open AI Chat">
+            <i class="fas fa-robot"></i>
+            <span class="fab-pulse"></span>
+        </button>
+        <div class="chat-popup" id="chatPopup">
+            <div class="chat-popup-header">
+                <div class="chat-popup-title">
+                    <i class="fas fa-robot"></i> CampusIQ AI
+                    <span class="online-dot"></span>
+                </div>
+                <button class="chat-popup-close" id="chatPopupClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="chat-popup-messages" id="chatPopupMessages">
+                <div class="chat-msg bot">
+                    <div class="chat-bubble">Hi! 👋 How can I help you today?</div>
+                </div>
+            </div>
+            <form class="chat-popup-input" id="chatPopupForm">
+                <input type="text" placeholder="Type a message…" id="chatPopupInput" autocomplete="off" />
+                <button type="submit"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======== NOTIFICATION PANEL ======== -->
+    <div class="notif-panel" id="notifPanel">
+        <div class="notif-header">
+            <h3>Notifications</h3>
+            <button class="notif-close" id="notifClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notif-list">
+            <div class="notif-item unread">
+                <div class="notif-icon" style="--accent: var(--pink)"><i class="fas fa-exclamation-circle"></i></div>
+                <div>
+                    <strong>Mid-Sem Exam Schedule Released</strong>
+                    <p>Check the academics section for your exam timetable.</p>
+                    <span class="notif-time">2 hours ago</span>
+                </div>
+            </div>
+            <div class="notif-item unread">
+                <div class="notif-icon" style="--accent: var(--cyan)"><i class="fas fa-clock"></i></div>
+                <div>
+                    <strong>Assignment Reminder</strong>
+                    <p>DS Assignment 3 is due in 2 days.</p>
+                    <span class="notif-time">3 hours ago</span>
+                </div>
+            </div>
+            <div class="notif-item unread">
+                <div class="notif-icon" style="--accent: var(--purple)"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                    <strong>Hackathon Registered!</strong>
+                    <p>You've successfully registered for Campus Hackathon 2026.</p>
+                    <span class="notif-time">5 hours ago</span>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-icon" style="--accent: var(--green)"><i class="fas fa-check-circle"></i></div>
+                <div>
+                    <strong>Grade Updated</strong>
+                    <p>Machine Learning — Lab 4 graded: A+</p>
+                    <span class="notif-time">1 day ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
