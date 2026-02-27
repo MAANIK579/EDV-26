@@ -27,7 +27,7 @@ export function generateResponse(msg) {
     if (lower.includes('weather'))
         return `🌤️ <strong>28°C</strong>, partly cloudy. Humidity 52%. Great day for outdoor activities!`;
     if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey'))
-        return `Hey Rahul! 👋 How can I help today? Ask about schedule, grades, events, rooms, or anything else!`;
+        return `Hey! 👋 How can I help today? Ask about schedule, grades, events, rooms, or anything else!`;
     if (lower.includes('thank'))
         return `You're welcome! 😊 Always here to help!`;
     if (lower.includes('help'))

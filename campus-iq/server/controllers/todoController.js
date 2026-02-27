@@ -3,10 +3,10 @@ import { db } from '../db/index.js';
 import { todos } from '../db/schema.js';
 
 // Get all todos for a student
-export const getTodos = async (req, res) => {
+export const getTodos = (req, res) => {
     try {
         const studentId = req.user.id;
-        const userTodos = await db.select().from(todos).where(eq(todos.studentId, studentId)).orderBy(todos.createdAt);
+        const userTodos = db.select().from(todos).where(eq(todos.studentId, studentId)).orderBy(todos.createdAt).all();
         res.json(userTodos);
     } catch (error) {
         console.error('Error fetching todos:', error);
@@ -15,17 +15,17 @@ export const getTodos = async (req, res) => {
 };
 
 // Create a new todo
-export const createTodo = async (req, res) => {
+export const createTodo = (req, res) => {
     try {
         const studentId = req.user.id;
         const { text } = req.body;
 
         if (!text) return res.status(400).json({ error: 'Text is required' });
 
-        const newTodo = await db.insert(todos).values({
+        const newTodo = db.insert(todos).values({
             studentId,
             text
-        }).returning();
+        }).returning().all();
 
         res.status(201).json(newTodo[0]);
     } catch (error) {
@@ -35,16 +35,16 @@ export const createTodo = async (req, res) => {
 };
 
 // Toggle a todo (done/undone)
-export const toggleTodo = async (req, res) => {
+export const toggleTodo = (req, res) => {
     try {
         const studentId = req.user.id;
         const todoId = parseInt(req.params.id);
         const { done } = req.body;
 
-        const updatedTodo = await db.update(todos)
+        const updatedTodo = db.update(todos)
             .set({ done })
             .where(and(eq(todos.id, todoId), eq(todos.studentId, studentId)))
-            .returning();
+            .returning().all();
 
         if (updatedTodo.length === 0) {
             return res.status(404).json({ error: 'Todo not found or unauthorized' });
@@ -58,14 +58,14 @@ export const toggleTodo = async (req, res) => {
 };
 
 // Delete a todo
-export const deleteTodo = async (req, res) => {
+export const deleteTodo = (req, res) => {
     try {
         const studentId = req.user.id;
         const todoId = parseInt(req.params.id);
 
-        const deletedTodo = await db.delete(todos)
+        const deletedTodo = db.delete(todos)
             .where(and(eq(todos.id, todoId), eq(todos.studentId, studentId)))
-            .returning();
+            .returning().all();
 
         if (deletedTodo.length === 0) {
             return res.status(404).json({ error: 'Todo not found or unauthorized' });

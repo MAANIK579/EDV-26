@@ -3,9 +3,9 @@ import { rooms } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 // Get all rooms
-export const getRooms = async (req, res) => {
+export const getRooms = (req, res) => {
     try {
-        const allRooms = await db.select().from(rooms);
+        const allRooms = db.select().from(rooms).all();
         res.json(allRooms);
     } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -14,14 +14,15 @@ export const getRooms = async (req, res) => {
 };
 
 // PATCH /api/rooms/:id — admin override room status
-export const updateRoomStatus = async (req, res) => {
+export const updateRoomStatus = (req, res) => {
     try {
         const roomId = parseInt(req.params.id);
-        const { statusOverride } = req.body; // 'available', 'occupied', or null (auto)
+        const { statusOverride } = req.body;
 
-        await db.update(rooms)
+        db.update(rooms)
             .set({ statusOverride: statusOverride || null })
-            .where(eq(rooms.id, roomId));
+            .where(eq(rooms.id, roomId))
+            .run();
 
         res.json({ success: true, roomId, statusOverride });
     } catch (error) {

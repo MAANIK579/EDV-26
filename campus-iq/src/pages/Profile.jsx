@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
     const { theme, toggleTheme, settings, updateSetting, showToast, todos, addTodo, toggleTodo, deleteTodo } = useApp();
+    const { user } = useAuth();
+
+    const userName = user?.name || user?.email?.split('@')[0] || 'Student';
+    const userEmail = user?.email || 'student@campus.edu';
 
     // Pomodoro Timer
     const [pomodoroMode, setPomodoroMode] = useState('work'); // work, break
@@ -60,9 +65,9 @@ export default function Profile() {
                 <div className="profile-card">
                     <div className="profile-banner"></div>
                     <div className="profile-avatar-wrap">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul" alt="Profile" />
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`} alt="Profile" />
                     </div>
-                    <h3>Rahul Sharma</h3>
+                    <h3>{userName}</h3>
                     <p className="subtitle">B.Tech Computer Science & Engineering</p>
                     <p className="meta">Semester 6 · Roll No. 2022CSE1234</p>
                     <div className="profile-stats">
@@ -71,7 +76,7 @@ export default function Profile() {
                         <div><span className="ps-value">6</span><span className="ps-label">Courses</span></div>
                     </div>
                     <div className="profile-contact">
-                        <div className="contact-row"><i className="fas fa-envelope"></i> rahul.sharma@university.edu</div>
+                        <div className="contact-row"><i className="fas fa-envelope"></i> {userEmail}</div>
                         <div className="contact-row"><i className="fas fa-phone"></i> +91 98765 43210</div>
                         <div className="contact-row"><i className="fas fa-map-marker-alt"></i> Hostel B, Room 312</div>
                     </div>

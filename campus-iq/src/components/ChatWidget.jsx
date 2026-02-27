@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { generateResponse } from '../utils/chatResponses';
+import { useAuth } from '../context/AuthContext';
 
 export default function ChatWidget() {
+    const { user } = useAuth();
+    const userName = user?.name?.split(' ')[0] || 'there';
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { id: 0, sender: 'bot', text: 'Hey Rahul! 👋 Ask me anything about campus life.' }
+        { id: 0, sender: 'bot', text: `Hey ${userName}! 👋 Ask me anything about campus life.` }
     ]);
     const [input, setInput] = useState('');
     const [typing, setTyping] = useState(false);

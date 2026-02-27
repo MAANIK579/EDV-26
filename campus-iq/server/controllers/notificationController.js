@@ -2,13 +2,14 @@ import { db } from '../db/index.js';
 import { notifications } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 
-// GET /api/notifications — unread notifications for logged-in user
-export const getNotifications = async (req, res) => {
+// GET /api/notifications — notifications for logged-in user
+export const getNotifications = (req, res) => {
     try {
         const userId = req.user.id;
-        const result = await db.select().from(notifications)
+        const result = db.select().from(notifications)
             .where(eq(notifications.userId, userId))
-            .orderBy(desc(notifications.createdAt));
+            .orderBy(desc(notifications.createdAt))
+            .all();
 
         res.json(result);
     } catch (error) {
@@ -18,14 +19,15 @@ export const getNotifications = async (req, res) => {
 };
 
 // PATCH /api/notifications/:id/read — mark one as read
-export const markNotificationRead = async (req, res) => {
+export const markNotificationRead = (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user.id;
 
-        await db.update(notifications)
+        db.update(notifications)
             .set({ read: true })
-            .where(and(eq(notifications.id, parseInt(id)), eq(notifications.userId, userId)));
+            .where(and(eq(notifications.id, parseInt(id)), eq(notifications.userId, userId)))
+            .run();
 
         res.json({ success: true });
     } catch (error) {
@@ -35,12 +37,13 @@ export const markNotificationRead = async (req, res) => {
 };
 
 // PATCH /api/notifications/read-all — mark all as read
-export const markAllRead = async (req, res) => {
+export const markAllRead = (req, res) => {
     try {
         const userId = req.user.id;
-        await db.update(notifications)
+        db.update(notifications)
             .set({ read: true })
-            .where(eq(notifications.userId, userId));
+            .where(eq(notifications.userId, userId))
+            .run();
 
         res.json({ success: true });
     } catch (error) {

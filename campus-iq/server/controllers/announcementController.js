@@ -1,18 +1,39 @@
 import { db } from '../db/index.js';
 import { announcements, notifications, users } from '../db/schema.js';
-import { eq, desc, ne } from 'drizzle-orm';
+import { eq, desc, or, inArray } from 'drizzle-orm';
 
-// GET /api/announcements — all announcements (for students + admins)
-export const getAnnouncements = async (req, res) => {
+// GET /api/announcements — filtered by user role
+export const getAnnouncements = (req, res) => {
     try {
-        const result = await db.select({
-            id: announcements.id,
-            title: announcements.title,
-            text: announcements.text,
-            priority: announcements.priority,
-            createdAt: announcements.createdAt,
-            createdBy: announcements.createdBy
-        }).from(announcements).orderBy(desc(announcements.createdAt));
+        const userRole = req.user.role; // 'admin', 'student', 'faculty'
+
+        let result;
+        if (userRole === 'admin') {
+            // Admin sees ALL announcements
+            result = db.select({
+                id: announcements.id,
+                title: announcements.title,
+                text: announcements.text,
+                priority: announcements.priority,
+                targetAudience: announcements.targetAudience,
+                createdAt: announcements.createdAt,
+                createdBy: announcements.createdBy
+            }).from(announcements).orderBy(desc(announcements.createdAt)).all();
+        } else {
+            // Students see 'all' + 'students' only; Faculty see 'all' + 'faculty' only
+            const audiences = userRole === 'faculty' ? ['all', 'faculty'] : ['all', 'students'];
+            result = db.select({
+                id: announcements.id,
+                title: announcements.title,
+                text: announcements.text,
+                priority: announcements.priority,
+                targetAudience: announcements.targetAudience,
+                createdAt: announcements.createdAt,
+                createdBy: announcements.createdBy
+            }).from(announcements)
+                .where(inArray(announcements.targetAudience, audiences))
+                .orderBy(desc(announcements.createdAt)).all();
+        }
 
         res.json(result);
     } catch (error) {
@@ -21,30 +42,44 @@ export const getAnnouncements = async (req, res) => {
     }
 };
 
-// POST /api/announcements — admin-only: create + notify all students
-export const createAnnouncement = async (req, res) => {
+// POST /api/announcements — admin-only: create + notify targeted users
+export const createAnnouncement = (req, res) => {
     try {
-        const { title, text, priority } = req.body;
+        const { title, text, priority, targetAudience } = req.body;
         const adminId = req.user.id;
+        const audience = targetAudience || 'all';
 
         // Insert announcement
-        const newAnn = await db.insert(announcements).values({
+        const newAnn = db.insert(announcements).values({
             title,
             text: text || '',
             priority: priority || 'normal',
+            targetAudience: audience,
             createdBy: adminId
-        }).returning();
+        }).returning().all();
 
-        // Notify all students
-        const allStudents = await db.select({ id: users.id }).from(users).where(eq(users.role, 'student'));
+        // Notify targeted users
+        let targetRoles;
+        if (audience === 'students') {
+            targetRoles = ['student'];
+        } else if (audience === 'faculty') {
+            targetRoles = ['faculty'];
+        } else {
+            targetRoles = ['student', 'faculty'];
+        }
 
-        if (allStudents.length > 0) {
-            const notifRows = allStudents.map(s => ({
-                userId: s.id,
-                message: `📢 New announcement: "${title}"`,
-                type: priority === 'urgent' ? 'urgent' : 'info'
-            }));
-            await db.insert(notifications).values(notifRows);
+        const targetUsers = db.select({ id: users.id }).from(users)
+            .where(inArray(users.role, targetRoles)).all();
+
+        if (targetUsers.length > 0) {
+            const audienceLabel = audience === 'students' ? ' (Students)' : audience === 'faculty' ? ' (Faculty)' : '';
+            for (const u of targetUsers) {
+                db.insert(notifications).values({
+                    userId: u.id,
+                    message: `📢 New announcement${audienceLabel}: "${title}"`,
+                    type: priority === 'urgent' ? 'urgent' : 'info'
+                }).run();
+            }
         }
 
         res.status(201).json(newAnn[0]);
@@ -55,10 +90,10 @@ export const createAnnouncement = async (req, res) => {
 };
 
 // DELETE /api/announcements/:id — admin-only
-export const deleteAnnouncement = async (req, res) => {
+export const deleteAnnouncement = (req, res) => {
     try {
         const { id } = req.params;
-        await db.delete(announcements).where(eq(announcements.id, parseInt(id)));
+        db.delete(announcements).where(eq(announcements.id, parseInt(id))).run();
         res.json({ success: true });
     } catch (error) {
         console.error('Delete announcement error:', error);

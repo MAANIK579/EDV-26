@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateResponse } from '../utils/chatResponses';
+import { useAuth } from '../context/AuthContext';
 
 const suggestions = [
     "What's my next class?",
@@ -11,8 +12,10 @@ const suggestions = [
 ];
 
 export default function Chat() {
+    const { user } = useAuth();
+    const userName = user?.name?.split(' ')[0] || 'there';
     const [messages, setMessages] = useState([
-        { id: 0, sender: 'bot', text: "Hey Rahul! 👋 I'm your AI campus assistant. Ask me anything about classes, grades, events, rooms, or campus life!" }
+        { id: 0, sender: 'bot', text: `Hey ${userName}! 👋 I'm your AI campus assistant. Ask me anything about classes, grades, events, rooms, or campus life!` }
     ]);
     const [input, setInput] = useState('');
     const [typing, setTyping] = useState(false);

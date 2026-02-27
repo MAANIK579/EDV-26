@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 /* ============================================
    FULL-SCREEN ADMIN DASHBOARD
-   Completely separate from the student panel
+   Connected to SQLite database via API
    ============================================ */
+
+const API = 'http://localhost:5000/api';
 
 const deptData = [
     { name: 'CSE', students: 420, color: '#10b981' },
@@ -29,43 +31,6 @@ const pieData = [
     { name: 'Below 75%', value: 20, color: '#ef4444' },
 ];
 
-const initialAnnouncements = [
-    { id: 1, title: 'Mid-Semester Exams', text: 'Schedule released — starts March 10.', priority: 'urgent', date: '2026-02-27' },
-    { id: 2, title: 'Hackathon Registrations Open', text: '36-hour campus hackathon on March 15-16.', priority: 'normal', date: '2026-02-27' },
-    { id: 3, title: 'Library Hours Extended', text: 'Open until 11 PM during exam preparation.', priority: 'normal', date: '2026-02-26' },
-];
-
-const initialEvents = [
-    { id: 1, name: 'Campus Hackathon 2026', date: 'Mar 15-16', venue: 'Auditorium', category: 'workshop' },
-    { id: 2, name: 'SPANDAN Cultural Fest', date: 'Mar 8', venue: 'Main Ground', category: 'cultural' },
-    { id: 3, name: 'AI/ML Guest Lecture', date: 'Mar 3', venue: 'Room 301', category: 'academic' },
-    { id: 4, name: 'Annual Sports Day', date: 'Feb 28', venue: 'Sports Complex', category: 'sports' },
-];
-
-const allRooms = [
-    { id: 'R101', number: '101', type: 'Classroom', building: 'Main Block', capacity: 60 },
-    { id: 'R102', number: '102', type: 'Classroom', building: 'Main Block', capacity: 60 },
-    { id: 'R105', number: '105', type: 'Classroom', building: 'Main Block', capacity: 40 },
-    { id: 'R201', number: '201', type: 'Seminar Hall', building: 'Main Block', capacity: 100 },
-    { id: 'R301', number: '301', type: 'Smart Classroom', building: 'Main Block', capacity: 50 },
-    { id: 'R314', number: '314', type: 'Classroom', building: 'Main Block', capacity: 45 },
-    { id: 'R402', number: '402', type: 'Conference Room', building: 'Main Block', capacity: 30 },
-    { id: 'L204', number: 'Lab 204', type: 'AI/ML Lab', building: 'CS Block', capacity: 35 },
-    { id: 'L301', number: 'Lab 301', type: 'Programming Lab', building: 'CS Block', capacity: 40 },
-    { id: 'L303', number: 'Lab 303', type: 'IoT Lab', building: 'CS Block', capacity: 25 },
-];
-
-const students = [
-    { name: 'Rahul Sharma', roll: '2022CSE1234', dept: 'CSE', sem: 6, gpa: 8.9, attendance: 87 },
-    { name: 'Priya Patel', roll: '2023ECE5678', dept: 'ECE', sem: 4, gpa: 9.1, attendance: 91 },
-    { name: 'Amit Kumar', roll: '2022CSE2345', dept: 'CSE', sem: 6, gpa: 8.5, attendance: 82 },
-    { name: 'Sneha Gupta', roll: '2023IT3456', dept: 'IT', sem: 4, gpa: 9.3, attendance: 94 },
-    { name: 'Vikram Singh', roll: '2022ME4567', dept: 'ME', sem: 6, gpa: 7.8, attendance: 78 },
-    { name: 'Ananya Reddy', roll: '2023CSE6789', dept: 'CSE', sem: 4, gpa: 9.0, attendance: 92 },
-    { name: 'Rohan Joshi', roll: '2022ECE7890', dept: 'ECE', sem: 6, gpa: 8.2, attendance: 85 },
-    { name: 'Kavya Nair', roll: '2023CE8901', dept: 'CE', sem: 4, gpa: 8.7, attendance: 89 },
-];
-
 const adminNavItems = [
     { id: 'overview', icon: 'fa-th-large', label: 'Overview' },
     { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements' },
@@ -78,17 +43,66 @@ const adminNavItems = [
 ];
 
 export default function AdminDashboard() {
-    const { user, logout } = useAuth();
+    const { user, token, logout } = useAuth();
     const { theme, toggleTheme, showToast } = useApp();
     const [activeSection, setActiveSection] = useState('overview');
 
-    // State for CRUD operations
-    const [announcements, setAnnouncements] = useState(initialAnnouncements);
-    const [newAnn, setNewAnn] = useState({ title: '', text: '', priority: 'normal' });
-    const [events, setEvents] = useState(initialEvents);
-    const [newEvt, setNewEvt] = useState({ name: '', date: '', venue: '', category: 'academic' });
-    const [roomOverrides, setRoomOverrides] = useState({});
+    // ── Data from database ──
+    const [announcements, setAnnouncements] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [rooms, setRooms] = useState([]);
+    const [students, setStudents] = useState([]);
+
+    // ── Form state ──
+    const [newAnn, setNewAnn] = useState({ title: '', text: '', priority: 'normal', targetAudience: 'all' });
+    const [newEvt, setNewEvt] = useState({ name: '', date: '', venue: '', category: 'academic', description: '' });
     const [studentSearch, setStudentSearch] = useState('');
+
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+    // ── Fetch data from backend ──
+    const fetchAnnouncements = useCallback(() => {
+        fetch(`${API}/announcements`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json()).then(d => { if (Array.isArray(d)) setAnnouncements(d); })
+            .catch(err => console.error('Failed to load announcements:', err));
+    }, [token]);
+
+    const fetchEvents = useCallback(() => {
+        fetch(`${API}/events`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json()).then(d => { if (Array.isArray(d)) setEvents(d); })
+            .catch(err => console.error('Failed to load events:', err));
+    }, [token]);
+
+    const fetchRooms = useCallback(() => {
+        fetch(`${API}/rooms`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json()).then(d => { if (Array.isArray(d)) setRooms(d); })
+            .catch(err => console.error('Failed to load rooms:', err));
+    }, [token]);
+
+    const fetchStudents = useCallback(() => {
+        fetch(`${API}/admin/students`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json()).then(d => { if (Array.isArray(d)) setStudents(d); })
+            .catch(err => console.error('Failed to load students:', err));
+    }, [token]);
+
+    useEffect(() => {
+        if (token) {
+            fetchAnnouncements();
+            fetchEvents();
+            fetchRooms();
+            fetchStudents();
+        }
+    }, [token, fetchAnnouncements, fetchEvents, fetchRooms, fetchStudents]);
+
+    // Auto-refresh every 15s
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchAnnouncements();
+            fetchEvents();
+            fetchRooms();
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [fetchAnnouncements, fetchEvents, fetchRooms]);
 
     // Clock
     const [clock, setClock] = React.useState('');
@@ -105,32 +119,85 @@ export default function AdminDashboard() {
         return () => clearInterval(id);
     }, []);
 
-    // Handlers
-    const addAnnouncement = (e) => {
+    // ── CRUD Handlers ──
+
+    // Add Announcement → POST to backend
+    const addAnnouncement = async (e) => {
         e.preventDefault();
         if (!newAnn.title.trim()) return;
-        setAnnouncements(prev => [{ ...newAnn, id: Date.now(), date: new Date().toISOString().split('T')[0] }, ...prev]);
-        setNewAnn({ title: '', text: '', priority: 'normal' });
-        showToast('📢 Announcement published!', 'success');
+        try {
+            const res = await fetch(`${API}/announcements`, {
+                method: 'POST', headers, body: JSON.stringify(newAnn)
+            });
+            if (res.ok) {
+                setNewAnn({ title: '', text: '', priority: 'normal', targetAudience: 'all' });
+                showToast('📢 Announcement published!', 'success');
+                fetchAnnouncements();
+            } else {
+                showToast('Failed to publish announcement', 'error');
+            }
+        } catch (err) { showToast('Network error', 'error'); }
     };
 
-    const addEvent = (e) => {
+    // Delete Announcement
+    const removeAnnouncement = async (id) => {
+        try {
+            await fetch(`${API}/announcements/${id}`, { method: 'DELETE', headers });
+            showToast('🗑️ Announcement removed', 'warning');
+            fetchAnnouncements();
+        } catch (err) { showToast('Failed to delete', 'error'); }
+    };
+
+    // Add Event → POST to backend
+    const addEvent = async (e) => {
         e.preventDefault();
         if (!newEvt.name.trim()) return;
-        setEvents(prev => [{ ...newEvt, id: Date.now() }, ...prev]);
-        setNewEvt({ name: '', date: '', venue: '', category: 'academic' });
-        showToast('🎉 Event created!', 'success');
+        try {
+            const res = await fetch(`${API}/events`, {
+                method: 'POST', headers,
+                body: JSON.stringify({
+                    title: newEvt.name,
+                    description: newEvt.description || '',
+                    date: newEvt.date || new Date().toISOString(),
+                    venue: newEvt.venue,
+                    category: newEvt.category
+                })
+            });
+            if (res.ok) {
+                setNewEvt({ name: '', date: '', venue: '', category: 'academic', description: '' });
+                showToast('🎉 Event created!', 'success');
+                fetchEvents();
+            } else {
+                showToast('Failed to create event', 'error');
+            }
+        } catch (err) { showToast('Network error', 'error'); }
     };
 
-    const toggleRoom = (id, status) => {
-        setRoomOverrides(prev => ({ ...prev, [id]: prev[id] === status ? null : status }));
-        showToast(`🚪 Room ${id.replace('R', '').replace('L', 'Lab ')} → ${status || 'Auto'}`, 'info', 2000);
+    // Delete Event
+    const removeEvent = async (id) => {
+        try {
+            await fetch(`${API}/events/${id}`, { method: 'DELETE', headers });
+            showToast('🗑️ Event removed', 'warning');
+            fetchEvents();
+        } catch (err) { showToast('Failed to delete', 'error'); }
+    };
+
+    // Room status override → PATCH to backend
+    const toggleRoom = async (id, status) => {
+        try {
+            await fetch(`${API}/rooms/${id}`, {
+                method: 'PATCH', headers,
+                body: JSON.stringify({ statusOverride: status })
+            });
+            const room = rooms.find(r => r.id === id);
+            showToast(`🚪 Room ${room?.number || id} → ${status || 'Auto'}`, 'info', 2000);
+            fetchRooms();
+        } catch (err) { showToast('Failed to update room', 'error'); }
     };
 
     const filteredStudents = students.filter(s =>
-        s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-        s.roll.toLowerCase().includes(studentSearch.toLowerCase()) ||
-        s.dept.toLowerCase().includes(studentSearch.toLowerCase())
+        (s.name || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+        (s.email || '').toLowerCase().includes(studentSearch.toLowerCase())
     );
 
     const inputStyle = { padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid transparent', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontFamily: 'inherit', width: '100%' };
@@ -169,7 +236,7 @@ export default function AdminDashboard() {
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt="avatar" className="user-avatar" />
                         <div style={{ flex: 1 }}>
                             <span className="user-name">{user?.name}</span>
-                            <span className="user-role">{user?.designation}</span>
+                            <span className="user-role">Administrator</span>
                         </div>
                         <button onClick={logout} title="Sign out" style={{ color: 'var(--text-dim)', fontSize: 16, padding: 8, borderRadius: '50%', cursor: 'pointer', background: 'none', border: 'none', transition: 'all 0.2s' }}
                             onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
@@ -211,10 +278,10 @@ export default function AdminDashboard() {
 
                                 <div className="stats-grid">
                                     {[
-                                        { icon: 'fa-user-graduate', label: 'Total Students', value: '2,450', color: '#10b981' },
-                                        { icon: 'fa-chalkboard-teacher', label: 'Faculty', value: '185', color: '#8b5cf6' },
-                                        { icon: 'fa-door-open', label: 'Active Rooms', value: '18', color: '#0ea5e9' },
-                                        { icon: 'fa-calendar-check', label: 'Events This Month', value: '12', color: '#ec4899' },
+                                        { icon: 'fa-user-graduate', label: 'Registered Students', value: students.length || '0', color: '#10b981' },
+                                        { icon: 'fa-bullhorn', label: 'Announcements', value: announcements.length || '0', color: '#8b5cf6' },
+                                        { icon: 'fa-door-open', label: 'Rooms', value: rooms.length || '0', color: '#0ea5e9' },
+                                        { icon: 'fa-calendar-check', label: 'Events', value: events.length || '0', color: '#ec4899' },
                                         { icon: 'fa-book', label: 'Library Books', value: '50K+', color: '#f59e0b' },
                                         { icon: 'fa-chart-line', label: 'Avg Attendance', value: '87%', color: '#f97316' },
                                     ].map((s, i) => (
@@ -255,20 +322,18 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
 
-                                {/* Recent activity */}
+                                {/* Recent Announcements */}
                                 <div className="glass-card">
-                                    <h3><i className="fas fa-history" style={{ color: '#fbbf24', marginRight: 8 }}></i>Recent Activity</h3>
-                                    {[
-                                        { icon: 'fa-user-plus', text: 'New student registration: Ananya Reddy (CSE)', time: '10 min ago', color: '#34d399' },
-                                        { icon: 'fa-bullhorn', text: 'Announcement published: Mid-Semester Exams', time: '2 hours ago', color: '#ef4444' },
-                                        { icon: 'fa-calendar-check', text: 'Event created: Campus Hackathon 2026', time: '5 hours ago', color: '#7c3aed' },
-                                        { icon: 'fa-door-open', text: 'Room 402 marked as maintenance', time: '1 day ago', color: '#fbbf24' },
-                                    ].map((a, i) => (
-                                        <div key={i} className="announce-item">
-                                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)', background: `${a.color}15`, display: 'grid', placeItems: 'center', color: a.color, fontSize: 14, flexShrink: 0 }}>
-                                                <i className={`fas ${a.icon}`}></i>
+                                    <h3><i className="fas fa-bullhorn" style={{ color: '#fbbf24', marginRight: 8 }}></i>Recent Announcements</h3>
+                                    {announcements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No announcements yet. Create one from the Announcements section.</p>}
+                                    {announcements.slice(0, 4).map((a) => (
+                                        <div key={a.id} className={`announce-item ${a.priority === 'urgent' ? 'urgent' : ''}`}>
+                                            <div className="announce-dot"></div>
+                                            <div style={{ flex: 1 }}>
+                                                <strong style={{ fontSize: 13 }}>{a.title}</strong>
+                                                <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '2px 0' }}>{a.text}</p>
+                                                <span className="announce-time">{a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</span>
                                             </div>
-                                            <div style={{ flex: 1 }}><strong style={{ fontSize: 13 }}>{a.text}</strong><span className="announce-time">{a.time}</span></div>
                                         </div>
                                     ))}
                                 </div>
@@ -278,16 +343,21 @@ export default function AdminDashboard() {
                         {/* ——— ANNOUNCEMENTS ——— */}
                         {activeSection === 'announcements' && (
                             <div>
-                                <div className="page-header"><h1><i className="fas fa-bullhorn"></i> Manage Announcements</h1><p className="subtitle">Create, edit, and publish campus-wide announcements</p></div>
+                                <div className="page-header"><h1><i className="fas fa-bullhorn"></i> Manage Announcements</h1><p className="subtitle">Create announcements — choose audience: Students, Faculty, or Everyone</p></div>
                                 <div className="glass-card" style={{ marginBottom: 24 }}>
                                     <h3><i className="fas fa-plus-circle" style={{ color: 'var(--cyan)', marginRight: 8 }}></i>New Announcement</h3>
                                     <form onSubmit={addAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
                                         <input placeholder="Announcement title" value={newAnn.title} onChange={e => setNewAnn(p => ({ ...p, title: e.target.value }))} required style={inputStyle} />
                                         <textarea placeholder="Announcement details..." value={newAnn.text} onChange={e => setNewAnn(p => ({ ...p, text: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-                                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                                             <select className="setting-select" value={newAnn.priority} onChange={e => setNewAnn(p => ({ ...p, priority: e.target.value }))}>
                                                 <option value="normal">Normal Priority</option>
                                                 <option value="urgent">🔴 Urgent</option>
+                                            </select>
+                                            <select className="setting-select" value={newAnn.targetAudience} onChange={e => setNewAnn(p => ({ ...p, targetAudience: e.target.value }))} style={{ minWidth: 160 }}>
+                                                <option value="all">🌐 Show to Everyone</option>
+                                                <option value="students">🎓 Students Only</option>
+                                                <option value="faculty">💼 Faculty Only</option>
                                             </select>
                                             <button type="submit" className="btn btn-primary"><i className="fas fa-paper-plane"></i> Publish</button>
                                         </div>
@@ -295,11 +365,23 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="glass-card">
                                     <h3><i className="fas fa-list" style={{ color: 'var(--amber)', marginRight: 8 }}></i>Active Announcements ({announcements.length})</h3>
+                                    {announcements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No announcements yet.</p>}
                                     {announcements.map(a => (
                                         <div key={a.id} className={`announce-item ${a.priority === 'urgent' ? 'urgent' : ''}`}>
                                             <div className="announce-dot"></div>
-                                            <div style={{ flex: 1 }}><strong>{a.title}</strong><p>{a.text}</p><span className="announce-time">{a.date}</span></div>
-                                            <button className="btn btn-sm btn-danger" onClick={() => { setAnnouncements(prev => prev.filter(x => x.id !== a.id)); showToast('🗑️ Removed', 'warning'); }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                    <strong>{a.title}</strong>
+                                                    <span style={{
+                                                        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5,
+                                                        background: a.targetAudience === 'faculty' ? 'rgba(249,115,22,0.15)' : a.targetAudience === 'students' ? 'rgba(16,185,129,0.15)' : 'rgba(0,212,255,0.15)',
+                                                        color: a.targetAudience === 'faculty' ? '#f97316' : a.targetAudience === 'students' ? '#10b981' : '#00d4ff'
+                                                    }}>{a.targetAudience === 'faculty' ? '💼 Faculty' : a.targetAudience === 'students' ? '🎓 Students' : '🌐 Everyone'}</span>
+                                                </div>
+                                                <p>{a.text}</p>
+                                                <span className="announce-time">{a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</span>
+                                            </div>
+                                            <button className="btn btn-sm btn-danger" onClick={() => removeAnnouncement(a.id)}>
                                                 <i className="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -311,26 +393,33 @@ export default function AdminDashboard() {
                         {/* ——— EVENTS ——— */}
                         {activeSection === 'events' && (
                             <div>
-                                <div className="page-header"><h1><i className="fas fa-calendar-plus"></i> Manage Events</h1><p className="subtitle">Create and organize campus events</p></div>
+                                <div className="page-header"><h1><i className="fas fa-calendar-plus"></i> Manage Events</h1><p className="subtitle">Create events — students see them in real-time</p></div>
                                 <div className="glass-card" style={{ marginBottom: 24 }}>
                                     <h3><i className="fas fa-plus-circle" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Create Event</h3>
                                     <form onSubmit={addEvent} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
                                         <input placeholder="Event Name" value={newEvt.name} onChange={e => setNewEvt(p => ({ ...p, name: e.target.value }))} required style={inputStyle} />
-                                        <input placeholder="Date (e.g. Mar 15)" value={newEvt.date} onChange={e => setNewEvt(p => ({ ...p, date: e.target.value }))} required style={inputStyle} />
+                                        <input type="date" value={newEvt.date} onChange={e => setNewEvt(p => ({ ...p, date: e.target.value }))} required style={inputStyle} />
                                         <input placeholder="Venue" value={newEvt.venue} onChange={e => setNewEvt(p => ({ ...p, venue: e.target.value }))} style={inputStyle} />
                                         <select className="setting-select" value={newEvt.category} onChange={e => setNewEvt(p => ({ ...p, category: e.target.value }))}>
                                             <option value="academic">Academic</option><option value="cultural">Cultural</option><option value="sports">Sports</option><option value="workshop">Workshop</option>
                                         </select>
+                                        <textarea placeholder="Event description..." value={newEvt.description} onChange={e => setNewEvt(p => ({ ...p, description: e.target.value }))} rows={2} style={{ ...inputStyle, gridColumn: '1 / -1', resize: 'vertical' }} />
                                         <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}><i className="fas fa-plus"></i> Create Event</button>
                                     </form>
                                 </div>
                                 <div className="glass-card">
                                     <h3><i className="fas fa-calendar" style={{ color: 'var(--pink)', marginRight: 8 }}></i>Events ({events.length})</h3>
+                                    {events.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No events yet.</p>}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                                         {events.map(ev => (
                                             <div key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
-                                                <div><strong style={{ fontSize: 14 }}>{ev.name}</strong><div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{ev.date} · {ev.venue} · {ev.category}</div></div>
-                                                <button className="btn btn-sm btn-danger" onClick={() => { setEvents(prev => prev.filter(x => x.id !== ev.id)); showToast('🗑️ Removed', 'warning'); }}><i className="fas fa-trash"></i></button>
+                                                <div>
+                                                    <strong style={{ fontSize: 14 }}>{ev.title}</strong>
+                                                    <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+                                                        {ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} · {ev.venue} · {ev.category}
+                                                    </div>
+                                                </div>
+                                                <button className="btn btn-sm btn-danger" onClick={() => removeEvent(ev.id)}><i className="fas fa-trash"></i></button>
                                             </div>
                                         ))}
                                     </div>
@@ -341,10 +430,10 @@ export default function AdminDashboard() {
                         {/* ——— ROOMS ——— */}
                         {activeSection === 'rooms' && (
                             <div>
-                                <div className="page-header"><h1><i className="fas fa-door-open"></i> Room Management</h1><p className="subtitle">Override room availability or set maintenance mode</p></div>
+                                <div className="page-header"><h1><i className="fas fa-door-open"></i> Room Management</h1><p className="subtitle">Override room availability — changes are saved to database</p></div>
                                 <div className="rooms-grid">
-                                    {allRooms.map(room => {
-                                        const override = roomOverrides[room.id];
+                                    {rooms.map(room => {
+                                        const override = room.statusOverride;
                                         return (
                                             <div key={room.id} className={`room-card ${override === 'available' ? 'available' : override === 'occupied' ? 'occupied' : ''}`}>
                                                 <div className="room-number">{room.number}</div>
@@ -372,28 +461,26 @@ export default function AdminDashboard() {
                         {/* ——— STUDENTS ——— */}
                         {activeSection === 'students' && (
                             <div>
-                                <div className="page-header"><h1><i className="fas fa-user-graduate"></i> Student Directory</h1><p className="subtitle">View and manage student records</p></div>
+                                <div className="page-header"><h1><i className="fas fa-user-graduate"></i> Registered Students</h1><p className="subtitle">Students who registered on the platform (from database)</p></div>
                                 <div className="glass-card" style={{ marginBottom: 20 }}>
-                                    <input placeholder="Search by name, roll number, or department..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} style={{ ...inputStyle, maxWidth: 400 }} />
+                                    <input placeholder="Search by name or email..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} style={{ ...inputStyle, maxWidth: 400 }} />
                                 </div>
                                 <div className="glass-card">
+                                    {filteredStudents.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No students registered yet.</p>}
                                     <table className="schedule-table" style={{ width: '100%' }}>
                                         <thead>
-                                            <tr><th>Student</th><th>Roll No</th><th>Dept</th><th>Sem</th><th>GPA</th><th>Attendance</th><th>Status</th></tr>
+                                            <tr><th>Student</th><th>Email</th><th>Role</th><th>Joined</th></tr>
                                         </thead>
                                         <tbody>
                                             {filteredStudents.map(s => (
-                                                <tr key={s.roll}>
+                                                <tr key={s.id}>
                                                     <td style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px' }}>
                                                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.name}`} alt="" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                                                        <strong style={{ fontSize: 13 }}>{s.name}</strong>
+                                                        <strong style={{ fontSize: 13 }}>{s.name || 'Unnamed'}</strong>
                                                     </td>
-                                                    <td style={{ fontSize: 13, color: 'var(--text-dim)' }}>{s.roll}</td>
-                                                    <td><span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cyan)', padding: '2px 8px', borderRadius: 4, background: 'rgba(0,212,255,0.1)' }}>{s.dept}</span></td>
-                                                    <td style={{ fontSize: 13 }}>{s.sem}</td>
-                                                    <td style={{ fontSize: 13, fontWeight: 700 }}>{s.gpa}</td>
-                                                    <td style={{ fontSize: 13, fontWeight: 600, color: s.attendance >= 85 ? 'var(--green)' : s.attendance >= 75 ? 'var(--amber)' : 'var(--red)' }}>{s.attendance}%</td>
-                                                    <td><span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius-xl)', background: s.attendance >= 75 ? 'rgba(52,211,153,0.1)' : 'rgba(239,68,68,0.1)', color: s.attendance >= 75 ? 'var(--green)' : 'var(--red)' }}>{s.attendance >= 75 ? 'Active' : 'Low Att.'}</span></td>
+                                                    <td style={{ fontSize: 13, color: 'var(--text-dim)' }}>{s.email}</td>
+                                                    <td><span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cyan)', padding: '2px 8px', borderRadius: 4, background: 'rgba(0,212,255,0.1)' }}>{s.role}</span></td>
+                                                    <td style={{ fontSize: 13 }}>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-'}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

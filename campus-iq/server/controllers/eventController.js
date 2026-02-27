@@ -3,14 +3,14 @@ import { db } from '../db/index.js';
 import { events, rsvps, notifications, users } from '../db/schema.js';
 
 // Get all events with user's RSVP status
-export const getAllEvents = async (req, res) => {
+export const getAllEvents = (req, res) => {
     try {
         const userId = req.user.id;
 
-        const allEvents = await db.select().from(events).orderBy(events.date);
+        const allEvents = db.select().from(events).orderBy(events.date).all();
 
         // Fetch user's RSVPs
-        const userRsvps = await db.select().from(rsvps).where(eq(rsvps.studentId, userId));
+        const userRsvps = db.select().from(rsvps).where(eq(rsvps.studentId, userId)).all();
         const rsvpEventIds = new Set(userRsvps.map(r => r.eventId));
 
         const eventsWithRsvpStatus = allEvents.map(event => ({
@@ -26,29 +26,30 @@ export const getAllEvents = async (req, res) => {
 };
 
 // POST /api/events — admin creates event + notifies students
-export const createEvent = async (req, res) => {
+export const createEvent = (req, res) => {
     try {
         const { title, description, date, category, venue } = req.body;
         const adminId = req.user.id;
 
-        const newEvent = await db.insert(events).values({
+        const newEvent = db.insert(events).values({
             title,
             description: description || '',
-            date: new Date(date),
+            date: new Date(date).toISOString(),
             category: category || 'academic',
             venue: venue || '',
             createdBy: adminId
-        }).returning();
+        }).returning().all();
 
         // Notify all students
-        const allStudents = await db.select({ id: users.id }).from(users).where(eq(users.role, 'student'));
+        const allStudents = db.select({ id: users.id }).from(users).where(eq(users.role, 'student')).all();
         if (allStudents.length > 0) {
-            const notifRows = allStudents.map(s => ({
-                userId: s.id,
-                message: `🎉 New event: "${title}" on ${new Date(date).toLocaleDateString()}`,
-                type: 'info'
-            }));
-            await db.insert(notifications).values(notifRows);
+            for (const s of allStudents) {
+                db.insert(notifications).values({
+                    userId: s.id,
+                    message: `🎉 New event: "${title}" on ${new Date(date).toLocaleDateString()}`,
+                    type: 'info'
+                }).run();
+            }
         }
 
         res.status(201).json(newEvent[0]);
@@ -59,12 +60,12 @@ export const createEvent = async (req, res) => {
 };
 
 // DELETE /api/events/:id — admin deletes event
-export const deleteEvent = async (req, res) => {
+export const deleteEvent = (req, res) => {
     try {
         const eventId = parseInt(req.params.id);
         // Delete RSVPs for this event first
-        await db.delete(rsvps).where(eq(rsvps.eventId, eventId));
-        await db.delete(events).where(eq(events.id, eventId));
+        db.delete(rsvps).where(eq(rsvps.eventId, eventId)).run();
+        db.delete(events).where(eq(events.id, eventId)).run();
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting event:', error);
@@ -73,19 +74,19 @@ export const deleteEvent = async (req, res) => {
 };
 
 // Toggle RSVP for an event
-export const toggleRsvp = async (req, res) => {
+export const toggleRsvp = (req, res) => {
     try {
         const studentId = req.user.id;
         const eventId = parseInt(req.params.id);
 
-        const existingRsvp = await db.select().from(rsvps)
-            .where(and(eq(rsvps.studentId, studentId), eq(rsvps.eventId, eventId)));
+        const existingRsvp = db.select().from(rsvps)
+            .where(and(eq(rsvps.studentId, studentId), eq(rsvps.eventId, eventId))).all();
 
         if (existingRsvp.length > 0) {
-            await db.delete(rsvps).where(eq(rsvps.id, existingRsvp[0].id));
+            db.delete(rsvps).where(eq(rsvps.id, existingRsvp[0].id)).run();
             res.json({ message: 'RSVP removed', eventId, status: 'removed' });
         } else {
-            await db.insert(rsvps).values({ studentId, eventId });
+            db.insert(rsvps).values({ studentId, eventId }).run();
             res.json({ message: 'RSVP created', eventId, status: 'added' });
         }
     } catch (error) {

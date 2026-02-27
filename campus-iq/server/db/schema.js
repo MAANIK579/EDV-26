@@ -1,69 +1,71 @@
-import { pgTable, serial, text, varchar, boolean, timestamp, integer } from 'drizzle-orm/pg-core';
+import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 // Users
-export const users = pgTable('users', {
-    id: serial('id').primaryKey(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
+export const users = sqliteTable('users', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    email: text('email').notNull().unique(),
     password: text('password').notNull(),
-    role: varchar('role', { length: 50 }).notNull().default('student'),
-    name: varchar('name', { length: 255 }),
-    createdAt: timestamp('created_at').defaultNow()
+    role: text('role').notNull().default('student'),
+    name: text('name'),
+    createdAt: text('created_at').default(sql`(datetime('now'))`)
 });
 
 // To-Do items
-export const todos = pgTable('todos', {
-    id: serial('id').primaryKey(),
+export const todos = sqliteTable('todos', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
     studentId: integer('student_id').references(() => users.id).notNull(),
     text: text('text').notNull(),
-    done: boolean('done').default(false),
-    createdAt: timestamp('created_at').defaultNow()
+    done: integer('done', { mode: 'boolean' }).default(false),
+    createdAt: text('created_at').default(sql`(datetime('now'))`)
 });
 
 // Campus Events
-export const events = pgTable('events', {
-    id: serial('id').primaryKey(),
-    title: varchar('title', { length: 255 }).notNull(),
+export const events = sqliteTable('events', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
     description: text('description'),
-    date: timestamp('date').notNull(),
-    category: varchar('category', { length: 100 }),
-    venue: varchar('venue', { length: 255 }),
+    date: text('date').notNull(),
+    category: text('category'),
+    venue: text('venue'),
     createdBy: integer('created_by').references(() => users.id)
 });
 
 // RSVPs
-export const rsvps = pgTable('rsvps', {
-    id: serial('id').primaryKey(),
+export const rsvps = sqliteTable('rsvps', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
     studentId: integer('student_id').references(() => users.id).notNull(),
     eventId: integer('event_id').references(() => events.id).notNull(),
-    createdAt: timestamp('created_at').defaultNow()
+    createdAt: text('created_at').default(sql`(datetime('now'))`)
 });
 
 // Rooms
-export const rooms = pgTable('rooms', {
-    id: serial('id').primaryKey(),
-    number: varchar('number', { length: 50 }).notNull(),
-    building: varchar('building', { length: 255 }).notNull(),
+export const rooms = sqliteTable('rooms', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    number: text('number').notNull(),
+    building: text('building').notNull(),
     capacity: integer('capacity').notNull(),
-    type: varchar('type', { length: 100 }),
-    statusOverride: varchar('status_override', { length: 50 })
+    type: text('type'),
+    statusOverride: text('status_override')
 });
 
 // Announcements
-export const announcements = pgTable('announcements', {
-    id: serial('id').primaryKey(),
-    title: varchar('title', { length: 255 }).notNull(),
+export const announcements = sqliteTable('announcements', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
     text: text('text'),
-    priority: varchar('priority', { length: 50 }).default('normal'),
+    priority: text('priority').default('normal'),
+    targetAudience: text('target_audience').default('all'),
     createdBy: integer('created_by').references(() => users.id),
-    createdAt: timestamp('created_at').defaultNow()
+    createdAt: text('created_at').default(sql`(datetime('now'))`)
 });
 
 // Notifications
-export const notifications = pgTable('notifications', {
-    id: serial('id').primaryKey(),
+export const notifications = sqliteTable('notifications', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
     userId: integer('user_id').references(() => users.id).notNull(),
     message: text('message').notNull(),
-    type: varchar('type', { length: 50 }).default('info'),
-    read: boolean('read').default(false),
-    createdAt: timestamp('created_at').defaultNow()
+    type: text('type').default('info'),
+    read: integer('read', { mode: 'boolean' }).default(false),
+    createdAt: text('created_at').default(sql`(datetime('now'))`)
 });
