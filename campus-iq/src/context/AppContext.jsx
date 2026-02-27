@@ -24,6 +24,7 @@ export function AppProvider({ children }) {
 
     // Theme
     useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
         document.body.classList.toggle('light', theme === 'light');
         store.set('theme', theme);
     }, [theme]);

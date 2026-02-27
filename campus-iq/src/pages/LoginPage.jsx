@@ -179,12 +179,12 @@ export default function LoginPage() {
             <canvas ref={canvasRef} className="login-canvas" />
 
             {/* Floating 3D shapes */}
-            <div className="floating-shapes">
-                <div className="shape shape-1"><div className="cube"><div className="face front"></div><div className="face back"></div><div className="face left"></div><div className="face right"></div><div className="face top"></div><div className="face bottom"></div></div></div>
-                <div className="shape shape-2"><div className="pyramid"><div className="pface pf1"></div><div className="pface pf2"></div><div className="pface pf3"></div><div className="pface pf4"></div></div></div>
-                <div className="shape shape-3"><div className="cube"><div className="face front"></div><div className="face back"></div><div className="face left"></div><div className="face right"></div><div className="face top"></div><div className="face bottom"></div></div></div>
-                <div className="shape shape-4"><div className="ring"></div></div>
-                <div className="shape shape-5"><div className="cube cube-sm"><div className="face front"></div><div className="face back"></div><div className="face left"></div><div className="face right"></div><div className="face top"></div><div className="face bottom"></div></div></div>
+            <div className="login-shapes">
+                <div className="floating-shape shape-1"><div className="shape-cube"><div className="cube-face front"></div><div className="cube-face back"></div><div className="cube-face left"></div><div className="cube-face right"></div><div className="cube-face top"></div><div className="cube-face bottom"></div></div></div>
+                <div className="floating-shape shape-2"><div className="shape-pyramid"><div className="pyramid-face pf1"></div><div className="pyramid-face pf2"></div><div className="pyramid-face pf3"></div><div className="pyramid-face pf4"></div></div></div>
+                <div className="floating-shape shape-3"><div className="shape-cube"><div className="cube-face front"></div><div className="cube-face back"></div><div className="cube-face left"></div><div className="cube-face right"></div><div className="cube-face top"></div><div className="cube-face bottom"></div></div></div>
+                <div className="floating-shape shape-4"><div className="shape-ring"></div></div>
+                <div className="floating-shape shape-5"><div className="shape-cube cube-sm"><div className="cube-face front"></div><div className="cube-face back"></div><div className="cube-face left"></div><div className="cube-face right"></div><div className="cube-face top"></div><div className="cube-face bottom"></div></div></div>
             </div>
 
             {/* Login Card */}
@@ -215,14 +215,15 @@ export default function LoginPage() {
                             <i className="fas fa-user-shield"></i>
                             Admin
                         </button>
-                        <div className={`role-indicator ${role === 'admin' ? 'right' : ''}`}></div>
+                        <div className={`role-slider ${role === 'admin' ? 'admin' : ''}`}></div>
                     </div>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="login-form">
-                        <div className="input-group">
+                        <div className="login-input-group">
                             <i className="fas fa-envelope input-icon"></i>
                             <input
+                                className="login-input"
                                 type="email"
                                 placeholder={role === 'student' ? 'Student email' : 'Admin email'}
                                 value={email}
@@ -232,9 +233,10 @@ export default function LoginPage() {
                             />
                         </div>
 
-                        <div className="input-group">
+                        <div className="login-input-group">
                             <i className="fas fa-lock input-icon"></i>
                             <input
+                                className="login-input"
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="Password"
                                 value={password}
@@ -242,7 +244,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                             />
-                            <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+                            <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                         </div>
@@ -267,7 +269,7 @@ export default function LoginPage() {
 
                     {/* Demo Credentials */}
                     <div className="demo-box">
-                        <button className="demo-btn" onClick={fillDemo}>
+                        <button className="demo-link" onClick={fillDemo}>
                             <i className="fas fa-magic"></i> Fill Demo Credentials
                         </button>
                         <div className="demo-creds">
@@ -283,17 +285,17 @@ export default function LoginPage() {
                     <div className="login-features">
                         {role === 'student' ? (
                             <>
-                                <span><i className="fas fa-calendar-alt"></i> Schedule</span>
-                                <span><i className="fas fa-chart-line"></i> Grades</span>
-                                <span><i className="fas fa-door-open"></i> Rooms</span>
-                                <span><i className="fas fa-robot"></i> AI Chat</span>
+                                <span className="login-tag"><i className="fas fa-calendar-alt"></i> Schedule</span>
+                                <span className="login-tag"><i className="fas fa-chart-line"></i> Grades</span>
+                                <span className="login-tag"><i className="fas fa-door-open"></i> Rooms</span>
+                                <span className="login-tag"><i className="fas fa-robot"></i> AI Chat</span>
                             </>
                         ) : (
                             <>
-                                <span><i className="fas fa-database"></i> Data Mgmt</span>
-                                <span><i className="fas fa-users-cog"></i> Students</span>
-                                <span><i className="fas fa-chart-bar"></i> Analytics</span>
-                                <span><i className="fas fa-cog"></i> Settings</span>
+                                <span className="login-tag"><i className="fas fa-database"></i> Data Mgmt</span>
+                                <span className="login-tag"><i className="fas fa-users-cog"></i> Students</span>
+                                <span className="login-tag"><i className="fas fa-chart-bar"></i> Analytics</span>
+                                <span className="login-tag"><i className="fas fa-cog"></i> Settings</span>
                             </>
                         )}
                     </div>
