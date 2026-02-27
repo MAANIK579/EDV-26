@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 
 const AuthContext = createContext();
 
+const API_URL = 'http://localhost:5000/api';
+
 const store = {
     get(key, fallback) {
         try { const v = localStorage.getItem('campusiq_auth_' + key); return v !== null ? JSON.parse(v) : fallback; }
@@ -15,48 +17,78 @@ const store = {
     }
 };
 
-// Demo accounts
-const accounts = {
-    student: [
-        { id: 'STU001', email: 'rahul.sharma@university.edu', password: 'student123', name: 'Rahul Sharma', role: 'student', department: 'B.Tech CSE', semester: 'Sem 6', rollNo: '2022CSE1234' },
-        { id: 'STU002', email: 'student@campus.edu', password: 'student123', name: 'Priya Patel', role: 'student', department: 'B.Tech ECE', semester: 'Sem 4', rollNo: '2023ECE5678' },
-    ],
-    admin: [
-        { id: 'ADM001', email: 'admin@university.edu', password: 'admin123', name: 'Dr. Rajesh Kumar', role: 'admin', department: 'Administration', designation: 'Dean of Students' },
-        { id: 'ADM002', email: 'prof.mehra@university.edu', password: 'admin123', name: 'Prof. Mehra', role: 'admin', department: 'Computer Science', designation: 'HOD - CSE' },
-    ]
-};
-
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(() => store.get('user', null));
-    const [isAuthenticated, setIsAuthenticated] = useState(() => store.get('isAuth', false));
+    const [token, setToken] = useState(() => store.get('token', null));
+    const [isAuthenticated, setIsAuthenticated] = useState(() => !!store.get('token', null));
 
-    const login = useCallback((email, password, role) => {
-        const pool = accounts[role] || [];
-        const found = pool.find(u => u.email === email && u.password === password);
+    const login = useCallback(async (email, password, role) => {
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
 
-        if (found) {
-            setUser(found);
+            if (!res.ok) {
+                return { success: false, error: data.error || 'Login failed' };
+            }
+
+            // Successfully logged in
+            setUser(data.user);
+            setToken(data.token);
             setIsAuthenticated(true);
-            store.set('user', found);
-            store.set('isAuth', true);
-            return { success: true, user: found };
-        }
+            store.set('user', data.user);
+            store.set('token', data.token);
 
-        return { success: false, error: 'Invalid email or password' };
+            return { success: true, user: data.user };
+        } catch (err) {
+            console.error('Login error:', err);
+            return { success: false, error: 'Network error. Is the server running?' };
+        }
+    }, []);
+
+    const register = useCallback(async (email, password, name, role) => {
+        try {
+            const res = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, name, role })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                return { success: false, error: data.error || 'Registration failed' };
+            }
+
+            setUser(data.user);
+            setToken(data.token);
+            setIsAuthenticated(true);
+            store.set('user', data.user);
+            store.set('token', data.token);
+
+            return { success: true, user: data.user };
+        } catch (err) {
+            console.error('Registration error:', err);
+            return { success: false, error: 'Network error. Is the server running?' };
+        }
     }, []);
 
     const logout = useCallback(() => {
         setUser(null);
+        setToken(null);
         setIsAuthenticated(false);
         store.remove('user');
-        store.remove('isAuth');
+        store.remove('token');
     }, []);
 
     const value = {
         user,
+        token,
         isAuthenticated,
         login,
+        register,
         logout,
         isAdmin: user?.role === 'admin',
         isStudent: user?.role === 'student',

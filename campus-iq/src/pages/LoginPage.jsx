@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const { login, register } = useAuth();
     const [role, setRole] = useState('student');
+    const [isRegister, setIsRegister] = useState(false); // Toggle between Login and Register
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -153,10 +155,13 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
 
-        // Simulate network delay
-        await new Promise(r => setTimeout(r, 1200));
+        let result;
+        if (isRegister) {
+            result = await register(email, password, name, role);
+        } else {
+            result = await login(email, password, role);
+        }
 
-        const result = login(email, password, role);
         setLoading(false);
 
         if (!result.success) {
@@ -164,14 +169,12 @@ export default function LoginPage() {
         }
     };
 
-    const fillDemo = () => {
-        if (role === 'student') {
-            setEmail('rahul.sharma@university.edu');
-            setPassword('student123');
-        } else {
-            setEmail('admin@university.edu');
-            setPassword('admin123');
-        }
+    const toggleMode = () => {
+        setIsRegister(!isRegister);
+        setError('');
+        setName('');
+        setEmail('');
+        setPassword('');
     };
 
     return (
@@ -220,6 +223,22 @@ export default function LoginPage() {
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="login-form">
+                        {/* Name field — only shown when registering */}
+                        {isRegister && (
+                            <div className="login-input-group">
+                                <i className="fas fa-user input-icon"></i>
+                                <input
+                                    className="login-input"
+                                    type="text"
+                                    placeholder="Full Name"
+                                    value={name}
+                                    onChange={e => { setName(e.target.value); setError(''); }}
+                                    required
+                                    autoComplete="name"
+                                />
+                            </div>
+                        )}
+
                         <div className="login-input-group">
                             <i className="fas fa-envelope input-icon"></i>
                             <input
@@ -242,7 +261,8 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={e => { setPassword(e.target.value); setError(''); }}
                                 required
-                                autoComplete="current-password"
+                                minLength={isRegister ? 6 : undefined}
+                                autoComplete={isRegister ? 'new-password' : 'current-password'}
                             />
                             <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
@@ -260,25 +280,19 @@ export default function LoginPage() {
                                 <div className="spinner"></div>
                             ) : (
                                 <>
-                                    <span>Sign In as {role === 'student' ? 'Student' : 'Admin'}</span>
+                                    <span>{isRegister ? 'Create Account' : `Sign In as ${role === 'student' ? 'Student' : 'Admin'}`}</span>
                                     <i className="fas fa-arrow-right"></i>
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* Demo Credentials */}
+                    {/* Login / Register Toggle */}
                     <div className="demo-box">
-                        <button className="demo-link" onClick={fillDemo}>
-                            <i className="fas fa-magic"></i> Fill Demo Credentials
+                        <button className="demo-link" onClick={toggleMode}>
+                            <i className={`fas ${isRegister ? 'fa-sign-in-alt' : 'fa-user-plus'}`}></i>
+                            {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Create One"}
                         </button>
-                        <div className="demo-creds">
-                            {role === 'student' ? (
-                                <p><strong>Demo:</strong> rahul.sharma@university.edu / student123</p>
-                            ) : (
-                                <p><strong>Demo:</strong> admin@university.edu / admin123</p>
-                            )}
-                        </div>
                     </div>
 
                     {/* Features */}

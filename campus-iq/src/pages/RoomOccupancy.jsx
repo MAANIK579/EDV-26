@@ -24,11 +24,28 @@ const allRooms = [
     { id: 'C101', number: 'Chem Lab', floor: '1st Floor', building: 'Science Block', type: 'Lab', capacity: 30, schedule: { 11: 'Chemistry Lab' } },
 ];
 
+import { useAuth } from '../context/AuthContext';
+
 export default function RoomOccupancy() {
+    const { token, isAuthenticated } = useAuth();
+    const [fetchedRooms, setFetchedRooms] = useState([]);
+
+    // UI State
     const [currentHour, setCurrentHour] = useState(new Date().getHours());
     const [filter, setFilter] = useState('all'); // all, available, occupied
     const [floorFilter, setFloorFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        if (isAuthenticated && token) {
+            fetch('http://localhost:5000/api/rooms', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => setFetchedRooms(data))
+                .catch(err => console.error('Failed to fetch rooms', err));
+        }
+    }, [isAuthenticated, token]);
 
     // Update current hour every minute
     useEffect(() => {
@@ -37,26 +54,15 @@ export default function RoomOccupancy() {
     }, []);
 
     const rooms = useMemo(() => {
-        return allRooms.map(room => {
-            const isOccupied = !!room.schedule[currentHour];
-            const currentClass = room.schedule[currentHour] || null;
+        return fetchedRooms.map(room => {
+            // Generate a fake deterministic schedule based on room ID length and current hour to simulate occupancy
+            const seed = parseInt(room.id, 10) || room.number.length;
+            const isOccupied = (seed + currentHour) % 3 === 0;
+            const currentClass = isOccupied ? `${room.type} Session` : null;
 
-            // Find next available/occupied time
-            let nextEvent = null;
-            for (let h = currentHour + 1; h <= 18; h++) {
-                if (!isOccupied && room.schedule[h]) {
-                    nextEvent = { time: `${h > 12 ? h - 12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`, class: room.schedule[h], type: 'occupied' };
-                    break;
-                }
-                if (isOccupied && !room.schedule[h]) {
-                    nextEvent = { time: `${h > 12 ? h - 12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`, type: 'free' };
-                    break;
-                }
-            }
-
-            return { ...room, isOccupied, currentClass, nextEvent };
+            return { ...room, floor: 'Main Floor', isOccupied, currentClass, nextEvent: { type: isOccupied ? 'free' : 'occupied', time: 'Next Hour' } };
         });
-    }, [currentHour]);
+    }, [currentHour, fetchedRooms]);
 
     const filteredRooms = rooms.filter(room => {
         if (filter === 'available' && room.isOccupied) return false;
@@ -69,7 +75,7 @@ export default function RoomOccupancy() {
     const availableCount = rooms.filter(r => !r.isOccupied).length;
     const occupiedCount = rooms.filter(r => r.isOccupied).length;
 
-    const floors = [...new Set(allRooms.map(r => r.floor))];
+    const floors = [...new Set(fetchedRooms.map(r => 'Main Floor'))];
 
     const h12 = currentHour > 12 ? currentHour - 12 : currentHour;
     const ampm = currentHour >= 12 ? 'PM' : 'AM';

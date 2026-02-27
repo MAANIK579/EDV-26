@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const gpaData = [
@@ -14,11 +15,7 @@ const todayTimeline = [
     { time: '16:00', name: 'Web Dev Workshop', room: 'Lab 201 · Dr. Roy', status: 'upcoming' },
 ];
 
-const announcements = [
-    { id: 1, title: 'Mid-Semester Exams', text: 'Schedule released — starts March 10.', time: '2 hours ago', urgent: true },
-    { id: 2, title: 'Hackathon Registrations Open', text: '36-hour campus hackathon on March 15-16.', time: '5 hours ago', urgent: false },
-    { id: 3, title: 'Library Hours Extended', text: 'Library open until 11 PM during exam prep.', time: '1 day ago', urgent: false },
-];
+const API = 'http://localhost:5000/api';
 
 function AnimatedNumber({ target, decimals = 0, duration = 1500 }) {
     const [value, setValue] = useState(0);
@@ -37,22 +34,67 @@ function AnimatedNumber({ target, decimals = 0, duration = 1500 }) {
 }
 
 export default function Dashboard() {
-    const { showToast } = useApp();
+    const { showToast, todos, events } = useApp();
+    const { user, token } = useAuth();
+
+    // Fetch announcements from backend
+    const [announcements, setAnnouncements] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const fetchData = () => {
+            if (token) {
+                fetch(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } })
+                    .then(r => r.json()).then(d => { if (Array.isArray(d)) setAnnouncements(d); }).catch(console.error);
+
+                fetch(`${API}/notifications`, { headers: { Authorization: `Bearer ${token}` } })
+                    .then(r => r.json()).then(d => { if (Array.isArray(d)) setNotifications(d); }).catch(console.error);
+            }
+        };
+        fetchData();
+        const interval = setInterval(fetchData, 15000); // Auto-refresh every 15s
+        return () => clearInterval(interval);
+    }, [token]);
+
+    const unreadNotifs = notifications.filter(n => !n.read);
+
+    const markAllRead = async () => {
+        try {
+            await fetch(`${API}/notifications/read-all`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            showToast('✅ All notifications marked as read', 'success', 1500);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const now = new Date();
     const hour = now.getHours();
     let greeting = 'Good Evening';
     if (hour < 12) greeting = 'Good Morning';
     else if (hour < 17) greeting = 'Good Afternoon';
 
+    const firstName = user?.name
+        ? user.name.split(' ')[0]
+        : (user?.email ? user.email.split('@')[0] : 'Student');
+
+    const rsvpCount = events.filter(e => e.isRsvpd).length;
+    const todosDone = todos.filter(t => t.done).length;
+
     useEffect(() => {
-        const t = setTimeout(() => showToast('👋 Welcome back, Rahul! You have 3 new notifications.', 'info', 4000), 1500);
-        return () => clearTimeout(t);
+        if (unreadNotifs.length > 0) {
+            const t = setTimeout(() => showToast(`👋 Welcome back, ${firstName}! You have ${unreadNotifs.length} new notification${unreadNotifs.length > 1 ? 's' : ''}.`, 'info', 4000), 1500);
+            return () => clearTimeout(t);
+        }
     }, []);
 
     return (
         <div className="page-transition">
             <div className="page-header">
-                <h1>{greeting}, <span className="accent">Rahul</span> 👋</h1>
+                <h1>{greeting}, <span className="accent">{firstName}</span> 👋</h1>
                 <p className="subtitle">Here's your campus snapshot for today — {now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
 
@@ -71,13 +113,13 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats — personalized */}
             <div className="stats-grid">
                 {[
-                    { icon: 'fa-chart-pie', label: 'Attendance', value: 87, unit: '%', color: 'var(--cyan)' },
+                    { icon: 'fa-list-check', label: 'Tasks Done', value: todosDone, unit: `/${todos.length}`, color: 'var(--cyan)' },
                     { icon: 'fa-star', label: 'CGPA', value: 8.9, decimals: 1, color: 'var(--purple)' },
-                    { icon: 'fa-calendar-check', label: 'Events This Week', value: 5, color: 'var(--pink)' },
-                    { icon: 'fa-envelope', label: 'Unread Messages', value: 12, color: 'var(--amber)' },
+                    { icon: 'fa-calendar-check', label: 'RSVPs', value: rsvpCount, color: 'var(--pink)' },
+                    { icon: 'fa-bell', label: 'Notifications', value: unreadNotifs.length, color: 'var(--amber)' },
                 ].map((stat, i) => (
                     <div key={i} className="stat-card" style={{ '--accent': stat.color, animationDelay: `${i * 0.08}s` }}>
                         <div className="stat-icon" style={{ color: stat.color }}><i className={`fas ${stat.icon}`}></i></div>
@@ -125,16 +167,36 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Announcements */}
+            {/* Notifications — from database */}
+            {unreadNotifs.length > 0 && (
+                <div className="glass-card" style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3><i className="fas fa-bell" style={{ color: 'var(--pink)', marginRight: 8 }}></i>New Notifications ({unreadNotifs.length})</h3>
+                        <button className="btn btn-sm btn-secondary" onClick={markAllRead}>Mark all read</button>
+                    </div>
+                    {unreadNotifs.slice(0, 5).map(n => (
+                        <div key={n.id} className={`announce-item ${n.type === 'urgent' ? 'urgent' : ''}`}>
+                            <div className="announce-dot"></div>
+                            <div>
+                                <p>{n.message}</p>
+                                <span className="announce-time">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Announcements — from database */}
             <div className="glass-card">
                 <h3><i className="fas fa-bullhorn" style={{ color: 'var(--amber)', marginRight: 8 }}></i>Announcements</h3>
+                {announcements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No announcements yet.</p>}
                 {announcements.map(a => (
-                    <div key={a.id} className={`announce-item ${a.urgent ? 'urgent' : ''}`}>
+                    <div key={a.id} className={`announce-item ${a.priority === 'urgent' ? 'urgent' : ''}`}>
                         <div className="announce-dot"></div>
                         <div>
                             <strong>{a.title}</strong>
                             <p>{a.text}</p>
-                            <span className="announce-time">{a.time}</span>
+                            <span className="announce-time">{a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</span>
                         </div>
                     </div>
                 ))}

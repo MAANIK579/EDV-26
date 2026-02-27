@@ -1,59 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 
-const initialAnnouncements = [
-    { id: 1, title: 'Mid-Semester Exams', text: 'Schedule released — starts March 10.', priority: 'urgent', date: '2026-02-27' },
-    { id: 2, title: 'Hackathon Registrations Open', text: '36-hour campus hackathon on March 15-16.', priority: 'normal', date: '2026-02-27' },
-];
-
-const initialEvents = [
-    { id: 1, name: 'Campus Hackathon', date: 'Mar 15-16', venue: 'Auditorium', category: 'workshop' },
-    { id: 2, name: 'SPANDAN Fest', date: 'Mar 8', venue: 'Main Ground', category: 'cultural' },
-];
-
-const initialRooms = [
-    { id: 'R101', number: '101', status: 'auto', override: null },
-    { id: 'R314', number: '314', status: 'auto', override: null },
-    { id: 'R402', number: '402', status: 'auto', override: null },
-];
+const API = 'http://localhost:5000/api';
 
 export default function AdminPanel() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { showToast } = useApp();
     const [activeTab, setActiveTab] = useState('announcements');
 
-    // Announcement management
-    const [announcements, setAnnouncements] = useState(initialAnnouncements);
-    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', text: '', priority: 'normal' });
+    // ─── Announcements ───
+    const [announcements, setAnnouncements] = useState([]);
+    const [newAnn, setNewAnn] = useState({ title: '', text: '', priority: 'normal' });
 
-    const addAnnouncement = (e) => {
+    useEffect(() => {
+        if (token) {
+            fetch(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setAnnouncements).catch(console.error);
+        }
+    }, [token]);
+
+    const addAnnouncement = async (e) => {
         e.preventDefault();
-        if (!newAnnouncement.title.trim()) return;
-        setAnnouncements(prev => [{ ...newAnnouncement, id: Date.now(), date: new Date().toISOString().split('T')[0] }, ...prev]);
-        setNewAnnouncement({ title: '', text: '', priority: 'normal' });
-        showToast('📢 Announcement published!', 'success', 2500);
+        if (!newAnn.title.trim()) return;
+        try {
+            const res = await fetch(`${API}/announcements`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(newAnn)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            setAnnouncements(prev => [data, ...prev]);
+            setNewAnn({ title: '', text: '', priority: 'normal' });
+            showToast('📢 Announcement published & students notified!', 'success', 2500);
+        } catch (err) {
+            console.error('Announcement error:', err);
+            showToast(`Failed: ${err.message}`, 'error');
+        }
     };
 
-    // Event management
-    const [events, setEvents] = useState(initialEvents);
-    const [newEvent, setNewEvent] = useState({ name: '', date: '', venue: '', category: 'academic' });
+    const deleteAnnouncement = async (id) => {
+        try {
+            await fetch(`${API}/announcements/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAnnouncements(prev => prev.filter(a => a.id !== id));
+            showToast('🗑️ Announcement removed', 'warning', 2000);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
-    const addEvent = (e) => {
+    // ─── Events ───
+    const [events, setEvents] = useState([]);
+    const [newEvent, setNewEvent] = useState({ title: '', date: '', venue: '', category: 'academic', description: '' });
+
+    useEffect(() => {
+        if (token) {
+            fetch(`${API}/events`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setEvents).catch(console.error);
+        }
+    }, [token]);
+
+    const addEvent = async (e) => {
         e.preventDefault();
-        if (!newEvent.name.trim()) return;
-        setEvents(prev => [{ ...newEvent, id: Date.now() }, ...prev]);
-        setNewEvent({ name: '', date: '', venue: '', category: 'academic' });
-        showToast('🎉 Event created!', 'success', 2500);
+        if (!newEvent.title.trim()) return;
+        try {
+            const res = await fetch(`${API}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(newEvent)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            setEvents(prev => [data, ...prev]);
+            setNewEvent({ title: '', date: '', venue: '', category: 'academic', description: '' });
+            showToast('🎉 Event created & students notified!', 'success', 2500);
+        } catch (err) {
+            console.error('Event error:', err);
+            showToast(`Failed: ${err.message}`, 'error');
+        }
     };
 
-    // Room override
-    const [rooms, setRooms] = useState(initialRooms);
-
-    const toggleRoomOverride = (id, newStatus) => {
-        setRooms(prev => prev.map(r => r.id === id ? { ...r, override: newStatus } : r));
-        showToast(`🚪 Room ${id.replace('R', '')} set to ${newStatus}`, 'info', 2000);
+    const deleteEvent = async (id) => {
+        try {
+            await fetch(`${API}/events/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setEvents(prev => prev.filter(ev => ev.id !== id));
+            showToast('🗑️ Event removed', 'warning', 2000);
+        } catch (err) {
+            console.error(err);
+        }
     };
+
+    // ─── Rooms ───
+    const [rooms, setRooms] = useState([]);
+
+    useEffect(() => {
+        if (token) {
+            fetch(`${API}/rooms`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setRooms).catch(console.error);
+        }
+    }, [token]);
+
+    const toggleRoomOverride = async (roomId, newStatus) => {
+        try {
+            await fetch(`${API}/rooms/${roomId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ statusOverride: newStatus })
+            });
+            setRooms(prev => prev.map(r => r.id === roomId ? { ...r, statusOverride: newStatus } : r));
+            showToast(`🚪 Room ${roomId} → ${newStatus || 'Auto'}`, 'info', 2000);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // ─── Students ───
+    const [students, setStudents] = useState([]);
+
+    useEffect(() => {
+        if (token) {
+            fetch(`${API}/admin/students`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setStudents).catch(console.error);
+        }
+    }, [token]);
 
     const tabs = [
         { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements' },
@@ -83,18 +159,18 @@ export default function AdminPanel() {
                 ))}
             </div>
 
-            {/* Announcements Tab */}
+            {/* ═══ Announcements Tab ═══ */}
             {activeTab === 'announcements' && (
                 <div>
                     <div className="glass-card" style={{ marginBottom: 24 }}>
                         <h3><i className="fas fa-plus-circle" style={{ color: 'var(--cyan)', marginRight: 8 }}></i>New Announcement</h3>
                         <form onSubmit={addAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-                            <input placeholder="Title" value={newAnnouncement.title} onChange={e => setNewAnnouncement(p => ({ ...p, title: e.target.value }))} required
+                            <input placeholder="Title" value={newAnn.title} onChange={e => setNewAnn(p => ({ ...p, title: e.target.value }))} required
                                 style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
-                            <textarea placeholder="Announcement text..." value={newAnnouncement.text} onChange={e => setNewAnnouncement(p => ({ ...p, text: e.target.value }))} rows={3}
+                            <textarea placeholder="Announcement text..." value={newAnn.text} onChange={e => setNewAnn(p => ({ ...p, text: e.target.value }))} rows={3}
                                 style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'vertical' }} />
                             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                <select className="setting-select" value={newAnnouncement.priority} onChange={e => setNewAnnouncement(p => ({ ...p, priority: e.target.value }))}>
+                                <select className="setting-select" value={newAnn.priority} onChange={e => setNewAnn(p => ({ ...p, priority: e.target.value }))}>
                                     <option value="normal">Normal Priority</option>
                                     <option value="urgent">🔴 Urgent</option>
                                 </select>
@@ -105,15 +181,16 @@ export default function AdminPanel() {
 
                     <div className="glass-card">
                         <h3><i className="fas fa-list" style={{ color: 'var(--amber)', marginRight: 8 }}></i>Active Announcements ({announcements.length})</h3>
+                        {announcements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No announcements yet. Create one above!</p>}
                         {announcements.map(a => (
                             <div key={a.id} className={`announce-item ${a.priority === 'urgent' ? 'urgent' : ''}`}>
                                 <div className="announce-dot"></div>
                                 <div style={{ flex: 1 }}>
                                     <strong>{a.title}</strong>
                                     <p>{a.text}</p>
-                                    <span className="announce-time">{a.date}</span>
+                                    <span className="announce-time">{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}</span>
                                 </div>
-                                <button className="btn btn-sm btn-danger" onClick={() => { setAnnouncements(prev => prev.filter(x => x.id !== a.id)); showToast('🗑️ Announcement removed', 'warning', 2000); }}>
+                                <button className="btn btn-sm btn-danger" onClick={() => deleteAnnouncement(a.id)}>
                                     <i className="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -122,15 +199,15 @@ export default function AdminPanel() {
                 </div>
             )}
 
-            {/* Events Tab */}
+            {/* ═══ Events Tab ═══ */}
             {activeTab === 'events' && (
                 <div>
                     <div className="glass-card" style={{ marginBottom: 24 }}>
                         <h3><i className="fas fa-plus-circle" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Create Event</h3>
                         <form onSubmit={addEvent} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                            <input placeholder="Event Name" value={newEvent.name} onChange={e => setNewEvent(p => ({ ...p, name: e.target.value }))} required
+                            <input placeholder="Event Title" value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} required
                                 style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
-                            <input placeholder="Date (e.g. Mar 15)" value={newEvent.date} onChange={e => setNewEvent(p => ({ ...p, date: e.target.value }))} required
+                            <input type="date" value={newEvent.date} onChange={e => setNewEvent(p => ({ ...p, date: e.target.value }))} required
                                 style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
                             <input placeholder="Venue" value={newEvent.venue} onChange={e => setNewEvent(p => ({ ...p, venue: e.target.value }))}
                                 style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
@@ -140,20 +217,25 @@ export default function AdminPanel() {
                                 <option value="sports">Sports</option>
                                 <option value="workshop">Workshop</option>
                             </select>
+                            <textarea placeholder="Description (optional)" value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} rows={2}
+                                style={{ gridColumn: '1 / -1', padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'vertical' }} />
                             <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}><i className="fas fa-plus"></i> Create Event</button>
                         </form>
                     </div>
 
                     <div className="glass-card">
                         <h3><i className="fas fa-calendar" style={{ color: 'var(--pink)', marginRight: 8 }}></i>Managed Events ({events.length})</h3>
+                        {events.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No events yet.</p>}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                             {events.map(ev => (
                                 <div key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
                                     <div>
-                                        <strong style={{ fontSize: 14 }}>{ev.name}</strong>
-                                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{ev.date} · {ev.venue} · {ev.category}</div>
+                                        <strong style={{ fontSize: 14 }}>{ev.title}</strong>
+                                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+                                            {ev.date ? new Date(ev.date).toLocaleDateString() : ''} · {ev.venue} · {ev.category}
+                                        </div>
                                     </div>
-                                    <button className="btn btn-sm btn-danger" onClick={() => { setEvents(prev => prev.filter(x => x.id !== ev.id)); showToast('🗑️ Event removed', 'warning', 2000); }}>
+                                    <button className="btn btn-sm btn-danger" onClick={() => deleteEvent(ev.id)}>
                                         <i className="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -163,25 +245,27 @@ export default function AdminPanel() {
                 </div>
             )}
 
-            {/* Rooms Override Tab */}
+            {/* ═══ Rooms Override Tab ═══ */}
             {activeTab === 'rooms' && (
                 <div className="glass-card">
                     <h3><i className="fas fa-door-open" style={{ color: 'var(--green)', marginRight: 8 }}></i>Room Status Override</h3>
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Override room availability manually. Set to "Auto" to use schedule-based detection.</p>
+                    {rooms.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No rooms in database.</p>}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {rooms.map(room => (
                             <div key={room.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
                                 <div>
                                     <strong style={{ fontSize: 16 }}>Room {room.number}</strong>
                                     <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
-                                        Current: {room.override ? <span style={{ color: room.override === 'available' ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>{room.override}</span> : <span style={{ color: 'var(--cyan)' }}>Auto (schedule)</span>}
+                                        {room.building} · {room.type} · Capacity: {room.capacity} ·
+                                        Current: {room.statusOverride ? <span style={{ color: room.statusOverride === 'available' ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>{room.statusOverride}</span> : <span style={{ color: 'var(--cyan)' }}>Auto</span>}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 6 }}>
-                                    <button className={`btn btn-sm ${room.override === 'available' ? 'btn-success' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'available')}>
+                                    <button className={`btn btn-sm ${room.statusOverride === 'available' ? 'btn-success' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'available')}>
                                         <i className="fas fa-check"></i> Available
                                     </button>
-                                    <button className={`btn btn-sm ${room.override === 'occupied' ? 'btn-danger' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'occupied')}>
+                                    <button className={`btn btn-sm ${room.statusOverride === 'occupied' ? 'btn-danger' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'occupied')}>
                                         <i className="fas fa-lock"></i> Occupied
                                     </button>
                                     <button className={`btn btn-sm btn-secondary`} onClick={() => toggleRoomOverride(room.id, null)}>
@@ -194,29 +278,20 @@ export default function AdminPanel() {
                 </div>
             )}
 
-            {/* Students Tab */}
+            {/* ═══ Students Tab — from database ═══ */}
             {activeTab === 'students' && (
                 <div className="glass-card">
-                    <h3><i className="fas fa-users" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Student Directory</h3>
+                    <h3><i className="fas fa-users" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Registered Students ({students.length})</h3>
+                    {students.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No students registered yet.</p>}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
-                        {[
-                            { name: 'Rahul Sharma', roll: '2022CSE1234', dept: 'CSE', sem: 6, gpa: 8.9, attendance: '87%' },
-                            { name: 'Priya Patel', roll: '2023ECE5678', dept: 'ECE', sem: 4, gpa: 9.1, attendance: '91%' },
-                            { name: 'Amit Kumar', roll: '2022CSE2345', dept: 'CSE', sem: 6, gpa: 8.5, attendance: '82%' },
-                            { name: 'Sneha Gupta', roll: '2023IT3456', dept: 'IT', sem: 4, gpa: 9.3, attendance: '94%' },
-                            { name: 'Vikram Singh', roll: '2022ME4567', dept: 'ME', sem: 6, gpa: 7.8, attendance: '78%' },
-                        ].map(s => (
-                            <div key={s.roll} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                        {students.map(s => (
+                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.name}`} alt="" style={{ width: 36, height: 36, borderRadius: '50%' }} />
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.name || s.email}`} alt="" style={{ width: 36, height: 36, borderRadius: '50%' }} />
                                     <div>
-                                        <strong style={{ fontSize: 14 }}>{s.name}</strong>
-                                        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{s.roll} · {s.dept} · Sem {s.sem}</div>
+                                        <strong style={{ fontSize: 14 }}>{s.name || 'Unnamed'}</strong>
+                                        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{s.email} · Joined {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}</div>
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>
-                                    <span style={{ color: 'var(--cyan)' }}>GPA: <strong>{s.gpa}</strong></span>
-                                    <span style={{ color: parseInt(s.attendance) > 85 ? 'var(--green)' : 'var(--amber)' }}>Att: <strong>{s.attendance}</strong></span>
                                 </div>
                             </div>
                         ))}
@@ -224,16 +299,14 @@ export default function AdminPanel() {
                 </div>
             )}
 
-            {/* Analytics Tab */}
+            {/* ═══ Analytics Tab ═══ */}
             {activeTab === 'analytics' && (
                 <div className="stats-grid">
                     {[
-                        { icon: 'fa-user-graduate', label: 'Total Students', value: '2,450', color: 'var(--cyan)' },
-                        { icon: 'fa-chalkboard-teacher', label: 'Faculty', value: '185', color: 'var(--purple)' },
-                        { icon: 'fa-door-open', label: 'Active Rooms', value: '18', color: 'var(--green)' },
-                        { icon: 'fa-calendar-check', label: 'Events This Month', value: '12', color: 'var(--pink)' },
-                        { icon: 'fa-book', label: 'Library Books', value: '50K+', color: 'var(--amber)' },
-                        { icon: 'fa-chart-line', label: 'Avg Attendance', value: '87%', color: 'var(--orange)' },
+                        { icon: 'fa-user-graduate', label: 'Registered Students', value: students.length, color: 'var(--cyan)' },
+                        { icon: 'fa-bullhorn', label: 'Announcements', value: announcements.length, color: 'var(--amber)' },
+                        { icon: 'fa-calendar-check', label: 'Events', value: events.length, color: 'var(--pink)' },
+                        { icon: 'fa-door-open', label: 'Total Rooms', value: rooms.length, color: 'var(--green)' },
                     ].map((stat, i) => (
                         <div key={i} className="stat-card" style={{ '--accent': stat.color, animationDelay: `${i * 0.08}s` }}>
                             <div className="stat-icon" style={{ color: stat.color }}><i className={`fas ${stat.icon}`}></i></div>
