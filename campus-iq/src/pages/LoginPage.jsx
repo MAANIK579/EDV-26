@@ -198,7 +198,7 @@ export default function LoginPage() {
                         <div className="logo-3d">
                             <i className="fas fa-graduation-cap"></i>
                         </div>
-                        <h1>Campus<span>IQ</span></h1>
+                        <h1><span style={{ color: 'white' }}>Campus</span><span style={{ color: 'white' }}>IQ</span></h1>
                         <p>AI-Powered Smart Campus Assistant</p>
                     </div>
 

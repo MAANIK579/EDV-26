@@ -7,6 +7,7 @@ export default function Profile() {
     const { user, token, setUser } = useAuth();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [editData, setEditData] = useState({
         name: user?.name || '',
         rollNo: user?.rollNo || '',
@@ -17,8 +18,22 @@ export default function Profile() {
         motherName: user?.motherName || ''
     });
 
+    const handleStartEdit = () => {
+        setEditData({
+            name: user?.name || '',
+            rollNo: user?.rollNo || '',
+            course: user?.course || '',
+            semester: user?.semester || '',
+            block: user?.block || '',
+            fatherName: user?.fatherName || '',
+            motherName: user?.motherName || ''
+        });
+        setIsEditing(true);
+    };
+
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        setSaving(true);
         try {
             const API = 'http://localhost:5000/api';
             const res = await fetch(`${API}/auth/profile`, {
@@ -39,11 +54,13 @@ export default function Profile() {
             }
         } catch (err) {
             showToast('Network error', 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
     // Pomodoro Timer
-    const [pomodoroMode, setPomodoroMode] = useState('work'); // work, break
+    const [pomodoroMode, setPomodoroMode] = useState('work');
     const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
     const [pomodoroRunning, setPomodoroRunning] = useState(false);
 
@@ -85,119 +102,287 @@ export default function Profile() {
         input.value = '';
     };
 
+    const completedTodos = todos.filter(t => t.done).length;
+    const pomodoroPercent = pomodoroMode === 'work'
+        ? ((25 * 60 - pomodoroTime) / (25 * 60)) * 100
+        : ((5 * 60 - pomodoroTime) / (5 * 60)) * 100;
+
+    const infoItems = [
+        { icon: 'fa-id-card', label: 'Roll Number', value: user?.rollNo },
+        { icon: 'fa-graduation-cap', label: 'Course', value: user?.course },
+        { icon: 'fa-layer-group', label: 'Semester', value: user?.semester ? `Semester ${user.semester}` : null },
+        { icon: 'fa-building', label: 'Block / Hostel', value: user?.block },
+        { icon: 'fa-user-tie', label: "Father's Name", value: user?.fatherName },
+        { icon: 'fa-user', label: "Mother's Name", value: user?.motherName },
+        { icon: 'fa-envelope', label: 'Email', value: user?.email },
+    ];
+
     return (
         <div className="page-transition">
             <div className="page-header">
-                <h1><i className="fas fa-user-circle"></i> Student Profile</h1>
-                <p className="subtitle">View and manage your academic and personal information</p>
+                <h1><i className="fas fa-user-circle"></i> My Profile</h1>
+                <p className="subtitle">Your academic identity and personal workspace</p>
             </div>
 
-            <div className="profile-grid">
-                <div className="profile-card" style={{ height: 'fit-content' }}>
-                    <div className="profile-banner"></div>
-                    <div className="profile-avatar-wrap">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt="Profile" />
-                    </div>
-                    <div style={{ padding: '0 20px 20px' }}>
-                        {!isEditing ? (
-                            <>
-                                <h3 style={{ marginBottom: 4 }}>{user?.name}</h3>
-                                <p className="subtitle" style={{ color: 'var(--cyan)', fontWeight: 600 }}>{user?.course || 'Set your course'}</p>
-                                <p className="meta" style={{ marginBottom: 20 }}>Semester {user?.semester || '—'} · Roll No. {user?.rollNo || '—'}</p>
-
-                                <div className="profile-stats">
-                                    <div><span className="ps-value">{user?.cgpa || '8.5'}</span><span className="ps-label">CGPA</span></div>
-                                    <div><span className="ps-value">{user?.attendance || '92%'}</span><span className="ps-label">Attendance</span></div>
-                                </div>
-
-                                <div className="info-section" style={{ marginTop: 24, textAlign: 'left' }}>
-                                    <h5 style={{ color: 'var(--text-dim)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Detailed Information</h5>
-                                    <div className="contact-row"><i className="fas fa-id-card"></i> <strong>Roll No:</strong> {user?.rollNo || 'N/A'}</div>
-                                    <div className="contact-row"><i className="fas fa-building"></i> <strong>Block/Hostel:</strong> {user?.block || 'N/A'}</div>
-                                    <div className="contact-row"><i className="fas fa-user-tie"></i> <strong>Father's Name:</strong> {user?.fatherName || 'N/A'}</div>
-                                    <div className="contact-row"><i className="fas fa-female"></i> <strong>Mother's Name:</strong> {user?.motherName || 'N/A'}</div>
-                                    <div className="contact-row"><i className="fas fa-envelope"></i> <strong>Email:</strong> {user?.email}</div>
-                                </div>
-
-                                <button className="btn btn-primary w-100" style={{ marginTop: 24 }} onClick={() => setIsEditing(true)}>
-                                    <i className="fas fa-edit"></i> Edit Profile
+            <div className="profile-layout">
+                {/* ─── Left Column: Profile Hero + Details ─── */}
+                <div className="profile-left-col">
+                    {/* Hero Card */}
+                    <div className="profile-hero-card">
+                        <div className="profile-hero-banner">
+                            <div className="profile-hero-banner-pattern"></div>
+                        </div>
+                        <div className="profile-hero-body">
+                            <div className="profile-hero-avatar">
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt="Profile" />
+                                <span className="profile-status-dot"></span>
+                            </div>
+                            <div className="profile-hero-info">
+                                <h2 className="profile-hero-name">{user?.name || 'Student'}</h2>
+                                <span className="profile-hero-role">
+                                    <i className="fas fa-shield-alt"></i>
+                                    {user?.role === 'admin' ? 'Administrator' : 'Student'}
+                                </span>
+                                <p className="profile-hero-email">
+                                    <i className="fas fa-envelope"></i> {user?.email}
+                                </p>
+                            </div>
+                            {!isEditing && (
+                                <button className="btn btn-primary profile-edit-btn" onClick={handleStartEdit}>
+                                    <i className="fas fa-pen"></i> Edit Profile
                                 </button>
-                            </>
-                        ) : (
-                            <form onSubmit={handleUpdateProfile} style={{ textAlign: 'left' }}>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Full Name</label>
-                                    <input className="form-input" value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })} required />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                    <div className="form-group" style={{ marginBottom: 12 }}>
-                                        <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Roll No</label>
-                                        <input className="form-input" value={editData.rollNo} onChange={e => setEditData({ ...editData, rollNo: e.target.value })} />
-                                    </div>
-                                    <div className="form-group" style={{ marginBottom: 12 }}>
-                                        <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Semester</label>
-                                        <input type="number" className="form-input" value={editData.semester} onChange={e => setEditData({ ...editData, semester: e.target.value })} />
-                                    </div>
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Course</label>
-                                    <input className="form-input" value={editData.course} onChange={e => setEditData({ ...editData, course: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Block / Hostel</label>
-                                    <input className="form-input" value={editData.block} onChange={e => setEditData({ ...editData, block: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Father's Name</label>
-                                    <input className="form-input" value={editData.fatherName} onChange={e => setEditData({ ...editData, fatherName: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 12, color: 'var(--text-dim)' }}>Mother's Name</label>
-                                    <input className="form-input" value={editData.motherName} onChange={e => setEditData({ ...editData, motherName: e.target.value })} />
-                                </div>
-                                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                                    <button type="submit" className="btn btn-primary flex-1">Save Changes</button>
-                                    <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
-                                </div>
-                            </form>
-                        )}
-                    </div>
-                </div>
+                            )}
+                        </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    {/* Pomodoro Timer */}
-                    <div className="glass-card">
-                        <h3><i className="fas fa-hourglass-half" style={{ color: 'var(--pink)', marginRight: 8 }}></i>Focus Timer</h3>
-                        <div className="pomodoro">
-                            <div className="pomodoro-label">{pomodoroMode === 'work' ? '🎯 FOCUS TIME' : '☕ BREAK TIME'}</div>
-                            <div className="pomodoro-timer" style={{ fontSize: 48, fontWeight: 800 }}>{formatTime(pomodoroTime)}</div>
-                            <div className="pomodoro-buttons" style={{ marginTop: 20 }}>
-                                <button className={`btn ${pomodoroRunning ? 'btn-danger' : 'btn-primary'}`} onClick={() => setPomodoroRunning(!pomodoroRunning)}>
-                                    <i className={`fas ${pomodoroRunning ? 'fa-pause' : 'fa-play'}`}></i>
-                                    {pomodoroRunning ? 'Pause' : 'Start'}
-                                </button>
-                                <button className="btn btn-secondary" onClick={resetPomodoro}>
-                                    <i className="fas fa-redo"></i> Reset
-                                </button>
+                        {/* Quick Stats */}
+                        <div className="profile-stats-bar">
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-value">{user?.semester || '—'}</span>
+                                <span className="profile-stat-label">Semester</span>
+                            </div>
+                            <div className="profile-stat-divider"></div>
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-value">{user?.cgpa || '8.9'}</span>
+                                <span className="profile-stat-label">CGPA</span>
+                            </div>
+                            <div className="profile-stat-divider"></div>
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-value">{user?.attendance || '92%'}</span>
+                                <span className="profile-stat-label">Attendance</span>
+                            </div>
+                            <div className="profile-stat-divider"></div>
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-value">{completedTodos}/{todos.length}</span>
+                                <span className="profile-stat-label">Tasks Done</span>
                             </div>
                         </div>
                     </div>
 
+                    {/* Info / Edit Card */}
+                    <div className="profile-details-card">
+                        {!isEditing ? (
+                            <>
+                                <div className="profile-details-header">
+                                    <h3><i className="fas fa-info-circle"></i> Personal Information</h3>
+                                </div>
+                                <div className="profile-info-grid">
+                                    {infoItems.map((item, idx) => (
+                                        <div className="profile-info-item" key={idx}>
+                                            <div className="profile-info-icon">
+                                                <i className={`fas ${item.icon}`}></i>
+                                            </div>
+                                            <div className="profile-info-content">
+                                                <span className="profile-info-label">{item.label}</span>
+                                                <span className={`profile-info-value ${!item.value ? 'empty' : ''}`}>
+                                                    {item.value || 'Not set'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="profile-details-header">
+                                    <h3><i className="fas fa-edit"></i> Edit Information</h3>
+                                    <button className="btn btn-sm btn-secondary" onClick={() => setIsEditing(false)}>
+                                        <i className="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                                <form onSubmit={handleUpdateProfile} className="profile-edit-form">
+                                    <div className="profile-form-row full">
+                                        <label>
+                                            <i className="fas fa-user"></i> Full Name
+                                        </label>
+                                        <input
+                                            value={editData.name}
+                                            onChange={e => setEditData({ ...editData, name: e.target.value })}
+                                            placeholder="Enter your full name"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="profile-form-row">
+                                        <label>
+                                            <i className="fas fa-id-card"></i> Roll No
+                                        </label>
+                                        <input
+                                            value={editData.rollNo}
+                                            onChange={e => setEditData({ ...editData, rollNo: e.target.value })}
+                                            placeholder="e.g. 2024CSE001"
+                                        />
+                                    </div>
+                                    <div className="profile-form-row">
+                                        <label>
+                                            <i className="fas fa-layer-group"></i> Semester
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="8"
+                                            value={editData.semester}
+                                            onChange={e => setEditData({ ...editData, semester: e.target.value })}
+                                            placeholder="1-8"
+                                        />
+                                    </div>
+                                    <div className="profile-form-row full">
+                                        <label>
+                                            <i className="fas fa-graduation-cap"></i> Course
+                                        </label>
+                                        <input
+                                            value={editData.course}
+                                            onChange={e => setEditData({ ...editData, course: e.target.value })}
+                                            placeholder="e.g. B.Tech Computer Science"
+                                        />
+                                    </div>
+                                    <div className="profile-form-row full">
+                                        <label>
+                                            <i className="fas fa-building"></i> Block / Hostel
+                                        </label>
+                                        <input
+                                            value={editData.block}
+                                            onChange={e => setEditData({ ...editData, block: e.target.value })}
+                                            placeholder="e.g. Block A, Room 304"
+                                        />
+                                    </div>
+                                    <div className="profile-form-row">
+                                        <label>
+                                            <i className="fas fa-user-tie"></i> Father's Name
+                                        </label>
+                                        <input
+                                            value={editData.fatherName}
+                                            onChange={e => setEditData({ ...editData, fatherName: e.target.value })}
+                                            placeholder="Father's full name"
+                                        />
+                                    </div>
+                                    <div className="profile-form-row">
+                                        <label>
+                                            <i className="fas fa-user"></i> Mother's Name
+                                        </label>
+                                        <input
+                                            value={editData.motherName}
+                                            onChange={e => setEditData({ ...editData, motherName: e.target.value })}
+                                            placeholder="Mother's full name"
+                                        />
+                                    </div>
+                                    <div className="profile-form-actions">
+                                        <button type="submit" className="btn btn-primary" disabled={saving}>
+                                            {saving ? (
+                                                <><i className="fas fa-spinner fa-spin"></i> Saving...</>
+                                            ) : (
+                                                <><i className="fas fa-check"></i> Save Changes</>
+                                            )}
+                                        </button>
+                                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>
+                                            Discard
+                                        </button>
+                                    </div>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* ─── Right Column: Widgets ─── */}
+                <div className="profile-right-col">
+                    {/* Pomodoro Timer */}
+                    <div className="profile-widget-card">
+                        <div className="profile-widget-header">
+                            <h3><i className="fas fa-hourglass-half" style={{ color: 'var(--pink)' }}></i> Focus Timer</h3>
+                            <span className={`profile-mode-badge ${pomodoroMode}`}>
+                                {pomodoroMode === 'work' ? '🎯 Focus' : '☕ Break'}
+                            </span>
+                        </div>
+                        <div className="pomodoro-ring-container">
+                            <svg className="pomodoro-ring" viewBox="0 0 120 120">
+                                <circle className="pomodoro-ring-bg" cx="60" cy="60" r="52" />
+                                <circle
+                                    className="pomodoro-ring-progress"
+                                    cx="60" cy="60" r="52"
+                                    style={{
+                                        strokeDasharray: `${2 * Math.PI * 52}`,
+                                        strokeDashoffset: `${2 * Math.PI * 52 * (1 - pomodoroPercent / 100)}`,
+                                        stroke: pomodoroMode === 'work' ? 'var(--emerald)' : 'var(--amber)'
+                                    }}
+                                />
+                            </svg>
+                            <div className="pomodoro-ring-text">
+                                <span className="pomodoro-ring-time">{formatTime(pomodoroTime)}</span>
+                                <span className="pomodoro-ring-label">{pomodoroMode === 'work' ? 'minutes left' : 'break time'}</span>
+                            </div>
+                        </div>
+                        <div className="pomodoro-buttons">
+                            <button
+                                className={`btn ${pomodoroRunning ? 'btn-danger' : 'btn-primary'}`}
+                                onClick={() => setPomodoroRunning(!pomodoroRunning)}
+                            >
+                                <i className={`fas ${pomodoroRunning ? 'fa-pause' : 'fa-play'}`}></i>
+                                {pomodoroRunning ? 'Pause' : 'Start'}
+                            </button>
+                            <button className="btn btn-secondary" onClick={resetPomodoro}>
+                                <i className="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Todo Manager */}
-                    <div className="glass-card">
-                        <h3><i className="fas fa-tasks" style={{ color: 'var(--green)', marginRight: 8 }}></i>Priority Tasks</h3>
-                        <form className="todo-input-row" onSubmit={handleAddTodo} style={{ marginBottom: 16 }}>
-                            <input name="todoText" placeholder="What needs to be done?" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: 'var(--radius-md)', color: 'white', flex: 1 }} />
-                            <button type="submit" className="btn btn-primary"><i className="fas fa-plus"></i></button>
+                    <div className="profile-widget-card">
+                        <div className="profile-widget-header">
+                            <h3><i className="fas fa-tasks" style={{ color: 'var(--green)' }}></i> Priority Tasks</h3>
+                            <span className="profile-task-count">
+                                {completedTodos}/{todos.length}
+                            </span>
+                        </div>
+                        {todos.length > 0 && (
+                            <div className="profile-task-progress-bar">
+                                <div
+                                    className="profile-task-progress-fill"
+                                    style={{ width: todos.length > 0 ? `${(completedTodos / todos.length) * 100}%` : '0%' }}
+                                ></div>
+                            </div>
+                        )}
+                        <form className="profile-todo-form" onSubmit={handleAddTodo}>
+                            <input
+                                name="todoText"
+                                placeholder="Add a new task..."
+                            />
+                            <button type="submit" className="btn btn-primary btn-sm">
+                                <i className="fas fa-plus"></i>
+                            </button>
                         </form>
-                        <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+                        <div className="profile-todo-list">
+                            {todos.length === 0 && (
+                                <div className="profile-empty-state">
+                                    <i className="fas fa-clipboard-check"></i>
+                                    <p>No tasks yet. Add one above!</p>
+                                </div>
+                            )}
                             {todos.map(todo => (
-                                <div key={todo.id} className={`todo-item ${todo.done ? 'done' : ''}`} style={{ padding: '10px 0' }}>
-                                    <div className="todo-check" onClick={() => toggleTodo(todo.id)}>
+                                <div key={todo.id} className={`profile-todo-item ${todo.done ? 'done' : ''}`}>
+                                    <div className="profile-todo-check" onClick={() => toggleTodo(todo.id)}>
                                         <i className="fas fa-check"></i>
                                     </div>
-                                    <span className="todo-text">{todo.text}</span>
-                                    <span className="todo-delete" onClick={() => deleteTodo(todo.id)}>
+                                    <span className="profile-todo-text">{todo.text}</span>
+                                    <span className="profile-todo-delete" onClick={() => deleteTodo(todo.id)}>
                                         <i className="fas fa-trash-alt"></i>
                                     </span>
                                 </div>
@@ -209,4 +394,3 @@ export default function Profile() {
         </div>
     );
 }
-

@@ -83,6 +83,11 @@ export function AuthProvider({ children }) {
         store.remove('token');
     }, []);
 
+    const updateUser = useCallback((updatedUser) => {
+        setUser(updatedUser);
+        store.set('user', updatedUser);
+    }, []);
+
     const value = {
         user,
         token,
@@ -90,6 +95,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        setUser: updateUser,
         isAdmin: user?.role === 'admin',
         isStudent: user?.role === 'student',
     };
