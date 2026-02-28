@@ -11,7 +11,8 @@ const searchIndex = [
     { title: 'Academics', sub: 'Courses & grades', icon: 'fa-book-open', path: '/academics', category: 'Navigation' },
     { title: 'Campus Hub', sub: 'Campus facilities', icon: 'fa-layer-group', path: '/services', category: 'Navigation' },
     { title: 'AI Chat', sub: 'Ask CampusIQ anything', icon: 'fa-robot', path: '/chat', category: 'Navigation' },
-    { title: 'Profile', sub: 'Account & settings', icon: 'fa-user-circle', path: '/profile', category: 'Navigation' },
+    { title: 'Profile', sub: 'Your student ID & details', icon: 'fa-user-circle', path: '/profile', category: 'Navigation' },
+    { title: 'Settings', sub: 'App preferences & privacy', icon: 'fa-cog', path: '/settings', category: 'Navigation' },
     { title: 'Data Structures & Algorithms', sub: 'CS301 · Prof. Mehra', icon: 'fa-code', path: '/academics', category: 'Courses' },
     { title: 'Machine Learning', sub: 'CS405 · Dr. Kapoor', icon: 'fa-brain', path: '/academics', category: 'Courses' },
     { title: 'Operating Systems', sub: 'CS310 · Prof. Singh', icon: 'fa-server', path: '/academics', category: 'Courses' },
@@ -135,6 +136,9 @@ export default function Topbar() {
                     <button className="icon-btn" onClick={() => setNotifPanelOpen(prev => !prev)}>
                         <i className="fas fa-bell"></i>
                         <span className="badge">3</span>
+                    </button>
+                    <button className="icon-btn" onClick={() => navigate('/settings')}>
+                        <i className="fas fa-cog"></i>
                     </button>
                     <button className="icon-btn" onClick={toggleTheme}>
                         <i className={`fas ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>

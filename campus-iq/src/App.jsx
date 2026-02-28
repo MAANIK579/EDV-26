@@ -18,6 +18,7 @@ import Academics from './pages/Academics';
 import Services from './pages/Services';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import StudentClubs from './pages/StudentClubs';
 import PlacementCell from './pages/PlacementCell'; // Added PlacementCell
 
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/placements" element={<PlacementCell />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

@@ -38,7 +38,13 @@ export const register = async (req, res) => {
                 id: newUser.id,
                 email: newUser.email,
                 role: newUser.role,
-                name: newUser.name
+                name: newUser.name,
+                rollNo: newUser.rollNo,
+                course: newUser.course,
+                semester: newUser.semester,
+                block: newUser.block,
+                fatherName: newUser.fatherName,
+                motherName: newUser.motherName
             },
             token
         });
@@ -75,12 +81,49 @@ export const login = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                name: user.name
+                name: user.name,
+                rollNo: user.rollNo,
+                course: user.course,
+                semester: user.semester,
+                block: user.block,
+                fatherName: user.fatherName,
+                motherName: user.motherName
             },
             token
         });
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ error: 'Internal server error during login' });
+    }
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, rollNo, course, semester, block, fatherName, motherName } = req.body;
+
+        const result = await db.update(users)
+            .set({
+                name,
+                rollNo,
+                course,
+                semester: semester ? parseInt(semester) : null,
+                block,
+                fatherName,
+                motherName
+            })
+            .where(eq(users.id, userId))
+            .returning();
+
+        const updatedUser = result[0];
+        if (updatedUser) delete updatedUser.password;
+
+        res.json({
+            success: true,
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Update Profile Error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
     }
 };

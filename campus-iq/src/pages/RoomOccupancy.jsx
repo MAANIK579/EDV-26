@@ -55,12 +55,28 @@ export default function RoomOccupancy() {
 
     const rooms = useMemo(() => {
         return fetchedRooms.map(room => {
-            // Generate a fake deterministic schedule based on room ID length and current hour to simulate occupancy
-            const seed = parseInt(room.id, 10) || room.number.length;
-            const isOccupied = (seed + currentHour) % 3 === 0;
-            const currentClass = isOccupied ? `${room.type} Session` : null;
+            let isOccupied = false;
+            let currentClass = null;
 
-            return { ...room, floor: 'Main Floor', isOccupied, currentClass, nextEvent: { type: isOccupied ? 'free' : 'occupied', time: 'Next Hour' } };
+            if (room.statusOverride) {
+                isOccupied = room.statusOverride === 'occupied';
+                currentClass = isOccupied ? 'Manual Override' : null;
+            } else if (room.schedule) {
+                const scheduleData = typeof room.schedule === 'string' ? JSON.parse(room.schedule) : room.schedule;
+                const classAtHour = scheduleData[currentHour.toString()];
+                if (classAtHour) {
+                    isOccupied = true;
+                    currentClass = classAtHour;
+                }
+            }
+
+            return {
+                ...room,
+                floor: room.building, // Adjust based on DB format or keep placeholder 
+                isOccupied,
+                currentClass,
+                nextEvent: { type: isOccupied ? 'occupied' : 'free', time: 'Next Hour' }
+            };
         });
     }, [currentHour, fetchedRooms]);
 

@@ -193,6 +193,36 @@ export default function AdminPanel() {
         } catch (err) { showToast('Network error', 'error'); }
     };
 
+
+
+    const handleScheduleUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('schedule', file);
+
+        try {
+            const res = await fetch(`${API}/rooms/schedule`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Schedule PDF uploaded and parsed!', 'success');
+                fetchData(); // Refresh rooms to pull new schedules
+            } else {
+                showToast(data.error || 'Failed to upload schedule.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error while uploading PDF.', 'error');
+        }
+    };
+
     const tabs = [
         { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements' },
         { id: 'events', icon: 'fa-calendar-plus', label: 'Events' },
@@ -462,33 +492,58 @@ export default function AdminPanel() {
 
             {/* ═══ Rooms Override Tab ═══ */}
             {activeTab === 'rooms' && (
-                <div className="glass-card">
-                    <h3><i className="fas fa-door-open" style={{ color: 'var(--green)', marginRight: 8 }}></i>Room Status Override</h3>
-                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Override room availability manually. Set to "Auto" to use schedule-based detection.</p>
-                    {rooms.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No rooms in database.</p>}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {rooms.map(room => (
-                            <div key={room.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
-                                <div>
-                                    <strong style={{ fontSize: 16 }}>Room {room.number}</strong>
-                                    <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
-                                        {room.building} · {room.type} · Capacity: {room.capacity} ·
-                                        Current: {room.statusOverride ? <span style={{ color: room.statusOverride === 'available' ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>{room.statusOverride}</span> : <span style={{ color: 'var(--cyan)' }}>Auto</span>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div className="glass-card">
+                        <h3><i className="fas fa-file-upload" style={{ color: 'var(--blue)', marginRight: 8 }}></i>Upload Automatic Schedules</h3>
+                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Upload a PDF schedule to automatically determine room occupancy based on text extraction.</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <input
+                                type="file"
+                                accept=".pdf"
+                                onChange={handleScheduleUpload}
+                                style={{
+                                    padding: '10px',
+                                    background: 'var(--bg-glass)',
+                                    border: '1px dashed var(--border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    maxWidth: '400px'
+                                }}
+                            />
+                        </div>
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>Example format: <code>[{'{"number": "R101", "schedule": {"9": "DSA", "10": "OS"}}'}]</code></p>
+                    </div>
+
+                    <div className="glass-card">
+                        <h3><i className="fas fa-door-open" style={{ color: 'var(--green)', marginRight: 8 }}></i>Room Status Override</h3>
+                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Override room availability manually. Set to "Auto" to use schedule-based detection.</p>
+                        {rooms.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No rooms in database.</p>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {rooms.map(room => (
+                                <div key={room.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                                    <div>
+                                        <strong style={{ fontSize: 16 }}>Room {room.number}</strong>
+                                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+                                            {room.building} · {room.type} · Capacity: {room.capacity} ·
+                                            Current: {room.statusOverride ? <span style={{ color: room.statusOverride === 'available' ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>{room.statusOverride}</span> : <span style={{ color: 'var(--cyan)' }}>Auto</span>}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                        <button className={`btn btn-sm ${room.statusOverride === 'available' ? 'btn-success' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'available')}>
+                                            <i className="fas fa-check"></i> Available
+                                        </button>
+                                        <button className={`btn btn-sm ${room.statusOverride === 'occupied' ? 'btn-danger' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'occupied')}>
+                                            <i className="fas fa-lock"></i> Occupied
+                                        </button>
+                                        <button className={`btn btn-sm btn-secondary`} onClick={() => toggleRoomOverride(room.id, null)}>
+                                            Auto
+                                        </button>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                    <button className={`btn btn-sm ${room.statusOverride === 'available' ? 'btn-success' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'available')}>
-                                        <i className="fas fa-check"></i> Available
-                                    </button>
-                                    <button className={`btn btn-sm ${room.statusOverride === 'occupied' ? 'btn-danger' : 'btn-secondary'}`} onClick={() => toggleRoomOverride(room.id, 'occupied')}>
-                                        <i className="fas fa-lock"></i> Occupied
-                                    </button>
-                                    <button className={`btn btn-sm btn-secondary`} onClick={() => toggleRoomOverride(room.id, null)}>
-                                        Auto
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}

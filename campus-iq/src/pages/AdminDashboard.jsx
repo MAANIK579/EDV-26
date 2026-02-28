@@ -83,7 +83,10 @@ export default function AdminDashboard() {
     const fetchRooms = useCallback(() => {
         fetch(`${API}/rooms`, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(r => r.json()).then(d => { if (Array.isArray(d)) setRooms(d); })
-            .catch(err => console.error('Failed to load rooms:', err));
+            .catch(err => {
+                console.error('Failed to load rooms:', err);
+                showToast('Failed to load rooms', 'error');
+            });
     }, [token]);
 
     const fetchStudents = useCallback(() => {
@@ -288,14 +291,50 @@ export default function AdminDashboard() {
     // Room status override → PATCH to backend
     const toggleRoom = async (id, status) => {
         try {
-            await fetch(`${API}/rooms/${id}`, {
-                method: 'PATCH', headers,
+            const res = await fetch(`${API}/rooms/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ statusOverride: status })
             });
-            const room = rooms.find(r => r.id === id);
-            showToast(`🚪 Room ${room?.number || id} → ${status || 'Auto'}`, 'info', 2000);
-            fetchRooms();
-        } catch (err) { showToast('Failed to update room', 'error'); }
+            if (res.ok) {
+                setRooms(prev => prev.map(r => r.id === id ? { ...r, statusOverride: status } : r));
+                showToast(`Room updated to ${status || 'Auto'}`, 'success');
+            } else {
+                showToast('Failed to update room status', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error while updating room', 'error');
+        }
+    };
+
+    const handleScheduleUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('schedule', file);
+
+        try {
+            const res = await fetch(`${API}/rooms/schedule`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                    // Note: Content-Type is not set for FormData, browser sets it automatically with boundary
+                },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Schedule PDF uploaded and parsed!', 'success');
+                fetchRooms();
+            } else {
+                showToast(data.error || 'Failed to upload schedule.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error while uploading PDF.', 'error');
+        }
     };
 
     const filteredStudents = students.filter(s =>
@@ -664,9 +703,33 @@ export default function AdminDashboard() {
 
                         {/* ——— ROOMS ——— */}
                         {activeSection === 'rooms' && (
-                            <div>
-                                <div className="page-header"><h1><i className="fas fa-door-open"></i> Room Management</h1><p className="subtitle">Override room availability — changes are saved to database</p></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                <div className="page-header"><h1><i className="fas fa-door-open"></i> Room Management</h1><p className="subtitle">Override room availability or upload automated schedules</p></div>
+
+                                <div className="glass-card">
+                                    <h3><i className="fas fa-file-upload" style={{ color: 'var(--blue)', marginRight: 8 }}></i>Upload Automatic Schedules</h3>
+                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Upload a PDF schedule to automatically determine room occupancy based on text extraction.</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleScheduleUpload}
+                                            style={{
+                                                padding: '10px',
+                                                background: 'var(--bg-glass)',
+                                                border: '1px dashed var(--border)',
+                                                borderRadius: 'var(--radius-md)',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                width: '100%',
+                                                maxWidth: '400px'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="rooms-grid">
+                                    {rooms.length === 0 && <p style={{ gridColumn: '1 / -1', color: 'var(--text-dim)', textAlign: 'center', padding: '40px 0' }}>No rooms found in database. Please ensure rooms are registered.</p>}
                                     {rooms.map(room => {
                                         const override = room.statusOverride;
                                         return (

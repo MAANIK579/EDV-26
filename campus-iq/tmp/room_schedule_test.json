@@ -1,0 +1,19 @@
+[
+    {
+        "number": "R101",
+        "schedule": {
+            "9": "Algorithms",
+            "10": "Systems",
+            "11": "Networking",
+            "14": "Data Science"
+        }
+    },
+    {
+        "number": "R102",
+        "schedule": {
+            "9": "Physics",
+            "12": "Chemistry Lab",
+            "16": "Electronics"
+        }
+    }
+]

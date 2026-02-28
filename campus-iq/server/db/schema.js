@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, boolean, timestamp, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, boolean, timestamp, integer, json } from 'drizzle-orm/pg-core';
 
 // Users
 export const users = pgTable('users', {
@@ -7,6 +7,12 @@ export const users = pgTable('users', {
     password: text('password').notNull(),
     role: varchar('role', { length: 50 }).notNull().default('student'),
     name: varchar('name', { length: 255 }),
+    rollNo: varchar('roll_no', { length: 50 }),
+    course: varchar('course', { length: 255 }),
+    semester: integer('semester'),
+    block: varchar('block', { length: 50 }),
+    fatherName: varchar('father_name', { length: 255 }),
+    motherName: varchar('mother_name', { length: 255 }),
     createdAt: timestamp('created_at').defaultNow()
 });
 
@@ -45,7 +51,8 @@ export const rooms = pgTable('rooms', {
     building: varchar('building', { length: 255 }).notNull(),
     capacity: integer('capacity').notNull(),
     type: varchar('type', { length: 100 }),
-    statusOverride: varchar('status_override', { length: 50 })
+    statusOverride: varchar('status_override', { length: 50 }),
+    schedule: json('schedule')
 });
 
 // Announcements

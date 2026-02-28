@@ -975,6 +975,94 @@ textarea {
   font-weight: 600;
 }
 
+/* CLASS BLOCKS FOR SCHEDULE */
+.class-block {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border-left: 4px solid var(--accent, var(--cyan));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all var(--speed-fast) var(--ease);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.class-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--accent, var(--cyan));
+  opacity: 0;
+  transition: opacity var(--speed-fast) var(--ease);
+  z-index: 0;
+}
+
+.class-block:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.class-block:hover::before {
+  opacity: 0.05;
+}
+
+.class-block>* {
+  position: relative;
+  z-index: 1;
+}
+
+.class-block.now {
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-elevated));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent);
+  border-left-width: 5px;
+}
+
+.class-block .class-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.class-block .class-room {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.class-block .live-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, var(--red));
+  padding: 2px 8px;
+  border-radius: 12px;
+  align-self: flex-start;
+  margin-top: 4px;
+  animation: pulse-soft 2s infinite;
+}
+
+@keyframes pulse-soft {
+  0% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+
+  70% {
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0);
+  }
+
+  100% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
 /* ——— ROOM OCCUPANCY ——— */
 .rooms-grid {
   display: grid;
