@@ -10,7 +10,7 @@ const navItems = [
     { path: '/map', icon: 'fa-map-marked-alt', label: 'Campus Map' },
     { path: '/events', icon: 'fa-calendar-day', label: 'Events' },
     { path: '/academics', icon: 'fa-book-open', label: 'Academics' },
-    { path: '/services', icon: 'fa-concierge-bell', label: 'Services' },
+    { path: '/services', icon: 'fa-layer-group', label: 'Campus Hub' },
     { path: '/chat', icon: 'fa-robot', label: 'AI Chat' },
     { path: '/profile', icon: 'fa-user-circle', label: 'Profile' },
 ];

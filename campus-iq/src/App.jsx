@@ -18,6 +18,8 @@ import Academics from './pages/Academics';
 import Services from './pages/Services';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import StudentClubs from './pages/StudentClubs';
+import PlacementCell from './pages/PlacementCell'; // Added PlacementCell
 
 export default function App() {
   const { sidebarOpen, setSidebarOpen } = useApp();
@@ -58,6 +60,8 @@ export default function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/academics" element={<Academics />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/clubs" element={<StudentClubs />} />
+            <Route path="/placements" element={<PlacementCell />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,14 +1,8 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema.js';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const sqlite = new Database(join(__dirname, 'campusiq.db'));
-
-// Enable WAL mode for better concurrent read performance
-sqlite.pragma('journal_mode = WAL');
-
-export const db = drizzle(sqlite, { schema });
-export { sqlite };
+const sql = neon(process.env.DATABASE_URL);
+export const db = drizzle(sql, { schema });

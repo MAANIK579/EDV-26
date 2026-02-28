@@ -13,10 +13,23 @@ export default function AdminPanel() {
     const [announcements, setAnnouncements] = useState([]);
     const [newAnn, setNewAnn] = useState({ title: '', text: '', priority: 'normal' });
 
+    // ─── Clubs ───
+    const [clubs, setClubs] = useState([]);
+    const [newClub, setNewClub] = useState({ name: '', description: '', category: 'technical' });
+    const [selectedClub, setSelectedClub] = useState(null);
+    const [clubMembersList, setClubMembersList] = useState([]);
+
+    // ─── Placements ───
+    const [placements, setPlacements] = useState([]);
+    const [newPlacement, setNewPlacement] = useState({ companyName: '', role: '', salary: '', deadline: '', type: 'Full-time', description: '', eligibleBatch: '' });
+
     useEffect(() => {
         if (token) {
             fetch(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } })
                 .then(r => r.json()).then(setAnnouncements).catch(console.error);
+
+            fetch(`${API}/placements`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setPlacements).catch(console.error);
         }
     }, [token]);
 
@@ -128,12 +141,62 @@ export default function AdminPanel() {
         if (token) {
             fetch(`${API}/admin/students`, { headers: { Authorization: `Bearer ${token}` } })
                 .then(r => r.json()).then(setStudents).catch(console.error);
+
+            fetch(`${API}/clubs`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(setClubs).catch(console.error);
         }
     }, [token]);
+
+    const addClub = async (e) => {
+        e.preventDefault();
+        if (!newClub.name.trim()) return;
+        try {
+            const res = await fetch(`${API}/clubs`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(newClub)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            setClubs(prev => [data, ...prev]);
+            setNewClub({ name: '', description: '', category: 'technical' });
+            showToast('🧩 Club created & students notified!', 'success', 2500);
+        } catch (err) {
+            console.error('Club error:', err);
+            showToast(`Failed: ${err.message}`, 'error');
+        }
+    };
+
+    const handleManageMembers = async (club) => {
+        setSelectedClub(club);
+        try {
+            const res = await fetch(`${API}/clubs/${club.id}/members`, { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            if (res.ok) setClubMembersList(data);
+            else showToast('Failed to fetch members', 'error');
+        } catch (err) { showToast('Network error', 'error'); }
+    };
+
+    const handleUpdateRole = async (clubId, studentId, role) => {
+        try {
+            const res = await fetch(`${API}/clubs/${clubId}/members/${studentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ role })
+            });
+            if (res.ok) {
+                showToast('Role updated successfully', 'success');
+                setClubMembersList(prev => prev.map(m => m.studentId === studentId ? { ...m, role } : m));
+            } else {
+                showToast('Failed to update role', 'error');
+            }
+        } catch (err) { showToast('Network error', 'error'); }
+    };
 
     const tabs = [
         { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements' },
         { id: 'events', icon: 'fa-calendar-plus', label: 'Events' },
+        { id: 'hub', icon: 'fa-layer-group', label: 'Campus Hub' },
         { id: 'rooms', icon: 'fa-door-open', label: 'Room Override' },
         { id: 'students', icon: 'fa-users', label: 'Students' },
         { id: 'analytics', icon: 'fa-chart-bar', label: 'Analytics' },
@@ -245,6 +308,158 @@ export default function AdminPanel() {
                 </div>
             )}
 
+            {/* ═══ Campus Hub Tab ═══ */}
+            {activeTab === 'hub' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, alignItems: 'flex-start' }}>
+
+                    {/* ——— CLUBS SECTION ——— */}
+                    <div className="glass-card">
+                        <h3><i className="fas fa-plus-circle" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Create New Club</h3>
+                        <form onSubmit={addClub} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <input type="text" placeholder="Club Name" value={newClub.name} onChange={e => setNewClub({ ...newClub, name: e.target.value })} required style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <textarea placeholder="Description" value={newClub.description} onChange={e => setNewClub({ ...newClub, description: e.target.value })} rows={3} style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none', resize: 'vertical' }} />
+                            <select value={newClub.category} onChange={e => setNewClub({ ...newClub, category: e.target.value })} style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }}>
+                                <option value="technical">Technical</option>
+                                <option value="cultural">Cultural</option>
+                                <option value="sports">Sports</option>
+                                <option value="arts">Arts</option>
+                                <option value="general">General</option>
+                            </select>
+                            <button type="submit" className="btn btn-primary" style={{ marginTop: 8 }}><i className="fas fa-paper-plane" style={{ marginRight: 6 }}></i>Create Club</button>
+                        </form>
+                    </div>
+
+                    <div className="glass-card">
+                        <h3><i className="fas fa-users-cog" style={{ color: 'var(--cyan)', marginRight: 8 }}></i>Manage Clubs ({clubs.length})</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {clubs.length === 0 ? <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No clubs created yet.</p> :
+                                clubs.map(club => (
+                                    <div key={club.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                                <strong style={{ fontSize: 16, color: 'var(--text-primary)' }}>{club.name}</strong>
+                                                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>{club.category}</span>
+                                            </div>
+                                            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{club.description}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button className="btn btn-sm btn-outline" onClick={() => handleManageMembers(club)}>
+                                                <i className="fas fa-users-cog"></i> Manage
+                                            </button>
+                                            <button className="btn btn-sm btn-danger" onClick={async () => {
+                                                if (!confirm('Delete this club? All memberships will be removed.')) return;
+                                                try {
+                                                    await fetch(`${API}/clubs/${club.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                                                    setClubs(prev => prev.filter(c => c.id !== club.id));
+                                                    showToast('Club deleted', 'info');
+                                                    if (selectedClub?.id === club.id) setSelectedClub(null);
+                                                } catch (err) { }
+                                            }}>
+                                                <i className="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+
+                    {selectedClub && (
+                        <div className="glass-card" style={{ gridColumn: '1 / -1', borderColor: 'var(--cyan)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <h3><i className="fas fa-id-badge" style={{ color: 'var(--yellow)', marginRight: 8 }}></i>Members: {selectedClub.name}</h3>
+                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedClub(null)}><i className="fas fa-times"></i> Close</button>
+                            </div>
+
+                            {clubMembersList.length === 0 ? (
+                                <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No members in this club yet.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {clubMembersList.map(member => (
+                                        <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                                            <div>
+                                                <strong style={{ fontSize: 14, color: 'var(--cyan)' }}>{member.name}</strong>
+                                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{member.email} • Joined: {new Date(member.joinedAt).toLocaleDateString()}</div>
+                                            </div>
+                                            <select
+                                                className="setting-select"
+                                                style={{ width: 'auto', padding: '6px 12px', fontSize: 13 }}
+                                                value={member.role}
+                                                onChange={(e) => handleUpdateRole(selectedClub.id, member.studentId, e.target.value)}
+                                            >
+                                                <option value="Member">Member</option>
+                                                <option value="President">President</option>
+                                                <option value="Vice President">Vice President</option>
+                                                <option value="Treasurer">Treasurer</option>
+                                                <option value="Secretary">Secretary</option>
+                                                <option value="Core Member">Core Member</option>
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+
+
+                    {/* ——— PLACEMENTS SECTION ——— */}
+                    <div className="glass-card" style={{ gridColumn: '1 / -1' }}>
+                        <h3><i className="fas fa-plus-circle" style={{ color: 'var(--pink)', marginRight: 8 }}></i>Add Placement Opportunity</h3>
+                        <form onSubmit={addPlacement} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 12 }}>
+                            <input placeholder="Company Name" value={newPlacement.companyName} onChange={e => setNewPlacement(p => ({ ...p, companyName: e.target.value }))} required style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <input placeholder="Role / Title" value={newPlacement.role} onChange={e => setNewPlacement(p => ({ ...p, role: e.target.value }))} required style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <input placeholder="CTC / Stipend" value={newPlacement.salary} onChange={e => setNewPlacement(p => ({ ...p, salary: e.target.value }))} required style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <input type="date" value={newPlacement.deadline} onChange={e => setNewPlacement(p => ({ ...p, deadline: e.target.value }))} required style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <input placeholder="Eligible Batch (e.g. 2025)" value={newPlacement.eligibleBatch} onChange={e => setNewPlacement(p => ({ ...p, eligibleBatch: e.target.value }))} style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }} />
+                            <select value={newPlacement.type} onChange={e => setNewPlacement(p => ({ ...p, type: e.target.value }))} style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none' }}>
+                                <option value="Full-time">Full-time</option>
+                                <option value="Internship">Internship</option>
+                                <option value="Part-time">Part-time</option>
+                            </select>
+                            <textarea placeholder="Job description..." value={newPlacement.description} onChange={e => setNewPlacement(p => ({ ...p, description: e.target.value }))} rows={2} style={{ padding: 10, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-glass)', color: 'var(--text-primary)', outline: 'none', gridColumn: '1 / -1', resize: 'vertical' }} />
+                            <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}><i className="fas fa-paper-plane" style={{ marginRight: 6 }}></i>Publish Opportunity</button>
+                        </form>
+                    </div>
+
+                    <div className="glass-card" style={{ gridColumn: '1 / -1' }}>
+                        <h3><i className="fas fa-building" style={{ color: 'var(--cyan)', marginRight: 8 }}></i>Ongoing Drives ({placements.length})</h3>
+                        {placements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No placements created yet.</p>}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12, marginTop: 12 }}>
+                            {placements.map(p => (
+                                <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                                <strong style={{ fontSize: 16, color: 'var(--text-primary)' }}>{p.companyName}</strong>
+                                                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: p.type === 'Internship' ? 'var(--pink)' : 'var(--purple)' }}>{p.type}</span>
+                                            </div>
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cyan)' }}>{p.role}</div>
+                                        </div>
+                                        <button className="btn btn-sm btn-danger" onClick={async () => {
+                                            if (!confirm('Remove this placement opportunity?')) return;
+                                            try {
+                                                await fetch(`${API}/placements/${p.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                                                setPlacements(prev => prev.filter(item => item.id !== p.id));
+                                                showToast('Opportunity removed.', 'info');
+                                            } catch (err) { }
+                                        }}><i className="fas fa-trash"></i></button>
+                                    </div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                        {p.salary && <span><i className="fas fa-money-bill-wave" style={{ width: 16, color: 'var(--text-dim)' }}></i> {p.salary}</span>}
+                                        {p.eligibleBatch && <span><i className="fas fa-user-graduate" style={{ width: 16, color: 'var(--text-dim)' }}></i> Batch: {p.eligibleBatch}</span>}
+                                        {p.deadline && <span style={{ color: new Date(p.deadline) < new Date() ? 'var(--red)' : 'inherit' }}><i className="fas fa-clock" style={{ width: 16, color: 'var(--text-dim)' }}></i> Deadline: {new Date(p.deadline).toLocaleDateString()}</span>}
+                                    </div>
+                                    {p.description && <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 4, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>{p.description}</div>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+
+                </div>
+            )}
+
             {/* ═══ Rooms Override Tab ═══ */}
             {activeTab === 'rooms' && (
                 <div className="glass-card">
@@ -299,6 +514,47 @@ export default function AdminPanel() {
                 </div>
             )}
 
+            {/* ═══ Placements Tab ═══ */}
+            {activeTab === 'placements' && (
+                <div>
+                    <div className="glass-card" style={{ marginBottom: 24 }}>
+                        <h3><i className="fas fa-plus-circle" style={{ color: 'var(--purple)', marginRight: 8 }}></i>Create Placement Drive</h3>
+                        <form onSubmit={addPlacement} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                            <input placeholder="Company Name" value={newPlacement.companyName} onChange={e => setNewPlacement(p => ({ ...p, companyName: e.target.value }))} required style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13 }} />
+                            <input placeholder="Role" value={newPlacement.role} onChange={e => setNewPlacement(p => ({ ...p, role: e.target.value }))} required style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13 }} />
+                            <input placeholder="CTC / Stipend" value={newPlacement.salary} onChange={e => setNewPlacement(p => ({ ...p, salary: e.target.value }))} required style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13 }} />
+                            <input type="date" value={newPlacement.deadline} onChange={e => setNewPlacement(p => ({ ...p, deadline: e.target.value }))} required style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13 }} />
+                            <input placeholder="Eligible Batch (e.g., 2025, All)" value={newPlacement.eligibleBatch} onChange={e => setNewPlacement(p => ({ ...p, eligibleBatch: e.target.value }))} style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13 }} />
+                            <select className="setting-select" value={newPlacement.type} onChange={e => setNewPlacement(p => ({ ...p, type: e.target.value }))}>
+                                <option value="Full-time">Full-time</option>
+                                <option value="Internship">Internship</option>
+                            </select>
+                            <textarea placeholder="Job description..." value={newPlacement.description} onChange={e => setNewPlacement(p => ({ ...p, description: e.target.value }))} rows={2} style={{ gridColumn: '1 / -1', padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, resize: 'vertical' }} />
+                            <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}><i className="fas fa-paper-plane"></i> Create Drive</button>
+                        </form>
+                    </div>
+
+                    <div className="glass-card">
+                        <h3><i className="fas fa-briefcase" style={{ color: 'var(--cyan)', marginRight: 8 }}></i>Ongoing Drives ({placements.length})</h3>
+                        {placements.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>No placement drives created.</p>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                            {placements.map(p => (
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                            <strong style={{ fontSize: 16, color: 'var(--text-primary)' }}>{p.companyName}</strong>
+                                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>{p.type}</span>
+                                        </div>
+                                        <div style={{ fontSize: 13, color: 'var(--cyan)', fontWeight: 600 }}>{p.role}</div>
+                                    </div>
+                                    <button className="btn btn-sm btn-danger" onClick={() => deletePlacement(p.id)}><i className="fas fa-trash"></i></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ═══ Analytics Tab ═══ */}
             {activeTab === 'analytics' && (
                 <div className="stats-grid">
@@ -306,6 +562,8 @@ export default function AdminPanel() {
                         { icon: 'fa-user-graduate', label: 'Registered Students', value: students.length, color: 'var(--cyan)' },
                         { icon: 'fa-bullhorn', label: 'Announcements', value: announcements.length, color: 'var(--amber)' },
                         { icon: 'fa-calendar-check', label: 'Events', value: events.length, color: 'var(--pink)' },
+                        { icon: 'fa-users', label: 'Total Clubs', value: clubs.length, color: 'var(--purple)' },
+                        { icon: 'fa-briefcase', label: 'Placement Drives', value: placements.length, color: 'var(--blue)' },
                         { icon: 'fa-door-open', label: 'Total Rooms', value: rooms.length, color: 'var(--green)' },
                     ].map((stat, i) => (
                         <div key={i} className="stat-card" style={{ '--accent': stat.color, animationDelay: `${i * 0.08}s` }}>

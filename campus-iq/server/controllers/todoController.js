@@ -2,11 +2,10 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { todos } from '../db/schema.js';
 
-// Get all todos for a student
-export const getTodos = (req, res) => {
+export const getTodos = async (req, res) => {
     try {
         const studentId = req.user.id;
-        const userTodos = db.select().from(todos).where(eq(todos.studentId, studentId)).orderBy(todos.createdAt).all();
+        const userTodos = await db.select().from(todos).where(eq(todos.studentId, studentId)).orderBy(todos.createdAt);
         res.json(userTodos);
     } catch (error) {
         console.error('Error fetching todos:', error);
@@ -14,19 +13,13 @@ export const getTodos = (req, res) => {
     }
 };
 
-// Create a new todo
-export const createTodo = (req, res) => {
+export const createTodo = async (req, res) => {
     try {
         const studentId = req.user.id;
         const { text } = req.body;
-
         if (!text) return res.status(400).json({ error: 'Text is required' });
 
-        const newTodo = db.insert(todos).values({
-            studentId,
-            text
-        }).returning().all();
-
+        const newTodo = await db.insert(todos).values({ studentId, text }).returning();
         res.status(201).json(newTodo[0]);
     } catch (error) {
         console.error('Error creating todo:', error);
@@ -34,22 +27,20 @@ export const createTodo = (req, res) => {
     }
 };
 
-// Toggle a todo (done/undone)
-export const toggleTodo = (req, res) => {
+export const toggleTodo = async (req, res) => {
     try {
         const studentId = req.user.id;
         const todoId = parseInt(req.params.id);
         const { done } = req.body;
 
-        const updatedTodo = db.update(todos)
+        const updatedTodo = await db.update(todos)
             .set({ done })
             .where(and(eq(todos.id, todoId), eq(todos.studentId, studentId)))
-            .returning().all();
+            .returning();
 
         if (updatedTodo.length === 0) {
             return res.status(404).json({ error: 'Todo not found or unauthorized' });
         }
-
         res.json(updatedTodo[0]);
     } catch (error) {
         console.error('Error updating todo:', error);
@@ -57,20 +48,18 @@ export const toggleTodo = (req, res) => {
     }
 };
 
-// Delete a todo
-export const deleteTodo = (req, res) => {
+export const deleteTodo = async (req, res) => {
     try {
         const studentId = req.user.id;
         const todoId = parseInt(req.params.id);
 
-        const deletedTodo = db.delete(todos)
+        const deletedTodo = await db.delete(todos)
             .where(and(eq(todos.id, todoId), eq(todos.studentId, studentId)))
-            .returning().all();
+            .returning();
 
         if (deletedTodo.length === 0) {
             return res.status(404).json({ error: 'Todo not found or unauthorized' });
         }
-
         res.json({ message: 'Todo deleted successfully', id: todoId });
     } catch (error) {
         console.error('Error deleting todo:', error);

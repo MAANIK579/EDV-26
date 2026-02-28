@@ -10,27 +10,23 @@ export const register = async (req, res) => {
     try {
         const { email, password, name, role } = req.body;
 
-        // Check if user exists
-        const existingUser = db.select().from(users).where(eq(users.email, email)).all();
+        const existingUser = await db.select().from(users).where(eq(users.email, email));
         if (existingUser.length > 0) {
             return res.status(400).json({ error: 'Email already registered' });
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Insert new user
-        const result = db.insert(users).values({
+        const result = await db.insert(users).values({
             email,
             password: hashedPassword,
             name: name || email.split('@')[0],
             role: role || 'student'
-        }).returning().all();
+        }).returning();
 
         const newUser = result[0];
 
-        // Generate token
         const token = jwt.sign(
             { id: newUser.id, role: newUser.role },
             JWT_SECRET,
@@ -56,21 +52,18 @@ export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Find user
-        const foundUser = db.select().from(users).where(eq(users.email, email)).all();
+        const foundUser = await db.select().from(users).where(eq(users.email, email));
         if (foundUser.length === 0) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         const user = foundUser[0];
 
-        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Generate token
         const token = jwt.sign(
             { id: user.id, role: user.role },
             JWT_SECRET,

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 const services = [
+    { name: 'Placement Cell', desc: 'Upcoming drives, resume builder, interviews', icon: 'fa-briefcase', status: '2 drives this week', color: '#f472b6', featured: true },
+    { name: 'Student Club', desc: 'Join clubs, view activities, register', icon: 'fa-users', status: '12 active clubs', color: '#8b5cf6', featured: true },
     { name: 'Campus Bus', desc: 'Track bus schedules and live countdowns', icon: 'fa-bus', status: '3 buses running', color: '#00d4ff' },
     { name: 'Library', desc: 'Search books, view availability, reserve', icon: 'fa-book', status: 'Open until 11 PM', color: '#7c3aed' },
-    { name: 'Health Center', desc: '24/7 emergency services and counseling', icon: 'fa-heartbeat', status: '24/7 Available', color: '#ef4444' },
     { name: 'Cafeteria', desc: 'View today\'s menu and meal timings', icon: 'fa-utensils', status: 'Open until 10 PM', color: '#f97316' },
-    { name: 'Sports Complex', desc: 'Book courts, check gym schedule', icon: 'fa-dumbbell', status: 'Open until 9 PM', color: '#fbbf24' },
     { name: 'IT Helpdesk', desc: 'Wi-Fi issues, software licenses, email', icon: 'fa-headset', status: 'Open 9 AM - 5 PM', color: '#34d399' },
-    { name: 'Placement Cell', desc: 'Upcoming drives, resume builder, interviews', icon: 'fa-briefcase', status: '2 drives this week', color: '#f472b6' },
-    { name: 'Student Club', desc: 'Join clubs, view activities, register', icon: 'fa-users', status: '12 active clubs', color: '#8b5cf6' },
 ];
 
 const busSchedule = [
@@ -59,6 +58,7 @@ function BusCountdown({ time }) {
 
 export default function Services() {
     const { showToast } = useApp();
+    const navigate = useNavigate();
     const [bookSearch, setBookSearch] = useState('');
 
     const filteredBooks = libraryBooks.filter(b =>
@@ -68,7 +68,7 @@ export default function Services() {
     return (
         <div className="page-transition">
             <div className="page-header">
-                <h1><i className="fas fa-concierge-bell"></i> Campus Services</h1>
+                <h1><i className="fas fa-layer-group"></i> Campus Hub</h1>
                 <p className="subtitle">Quick access to all campus facilities</p>
             </div>
 
@@ -77,12 +77,24 @@ export default function Services() {
                 {services.map((s, i) => (
                     <div
                         key={s.name}
-                        className="service-tile"
-                        style={{ '--accent': s.color, animationDelay: `${i * 0.05}s` }}
-                        onClick={() => showToast(`🏫 ${s.name}: ${s.status}`, 'info', 2500)}
+                        className={`service-tile ${s.featured ? 'featured' : ''}`}
+                        style={{
+                            '--accent': s.color,
+                            animationDelay: `${i * 0.05}s`,
+                            ...(s.featured ? { gridColumn: 'span 2', padding: '28px 24px' } : {})
+                        }}
+                        onClick={() => {
+                            if (s.name === 'Student Club') {
+                                navigate('/clubs');
+                            } else if (s.name === 'Placement Cell') {
+                                navigate('/placements');
+                            } else {
+                                showToast(`🏫 ${s.name}: ${s.status}`, 'info', 2500);
+                            }
+                        }}
                     >
-                        <div className="service-icon" style={{ color: s.color }}><i className={`fas ${s.icon}`}></i></div>
-                        <h3>{s.name}</h3>
+                        <div className="service-icon" style={{ color: s.color, fontSize: s.featured ? 32 : undefined }}><i className={`fas ${s.icon}`}></i></div>
+                        <h3 style={s.featured ? { fontSize: 20 } : {}}>{s.name}</h3>
                         <p>{s.desc}</p>
                         <div className="service-status"><i className="fas fa-circle" style={{ fontSize: 6 }}></i> {s.status}</div>
                     </div>
